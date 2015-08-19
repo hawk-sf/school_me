@@ -1,0 +1,7 @@
+*.DS_Store
+*.db
+*.pyc
+*.log
+*.pid
+*.sock
+*.sublime-*
