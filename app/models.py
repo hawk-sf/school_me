@@ -203,7 +203,7 @@ class School(db.Model):
         else:
             self.open_date   = None
 
-    def as_dict(self):
+    def as_dict(self, ensure_strings=False):
         d = self.__dict__.copy()
         d['district_ownership']          = self.district_ownership.as_dict()
         d['education_instruction_level'] = self.education_instruction_level.as_dict()
@@ -212,16 +212,22 @@ class School(db.Model):
         d['principles']                  = [p.as_dict() for p in self.principles]
         d['district']                    = self.district.district if self.district else None
         del(d['_sa_instance_state'])
+        if ensure_strings:
+            self._set_dict_strings(d)
         return d
 
     def as_json(self):
-        d = self.as_dict()
-        d['last_update'] = d['last_update'].strftime(DATE_FMT) if d['last_update'] else None
-        d['open_date']   = d['open_date'].strftime(DATE_FMT)   if d['open_date']   else None
-        d['closed_date'] = d['closed_date'].strftime(DATE_FMT) if d['closed_date'] else None
-        d['longitude']   = str(self.longitude)
-        d['latitude']    = str(self.latitude)
-        return dumps(d)
+        return dumps(self.as_dict(ensure_strings=True), ensure_ascii=False).encode('utf8')
+
+    def _set_dict_strings(self, school_dict):
+        school_dict['last_update'] = school_dict['last_update'].strftime(DATE_FMT) \
+                                     if school_dict['last_update'] else None
+        school_dict['open_date']   = school_dict['open_date'].strftime(DATE_FMT)   \
+                                     if school_dict['open_date']   else None
+        school_dict['closed_date'] = school_dict['closed_date'].strftime(DATE_FMT) \
+                                     if school_dict['closed_date'] else None
+        school_dict['longitude']   = str(self.longitude)
+        school_dict['latitude']    = str(self.latitude)
 
 
 class DistrictOwnership(db.Model):
@@ -446,20 +452,24 @@ class District(db.Model):
             year, month, day     = [int(n) for n in district_tup.LastUpdate.split('-')]
             self.last_cde_update = datetime.date(year, month, day)
 
-    def as_dict(self):
+    def as_dict(self, ensure_strings=True):
         d = self.__dict__.copy()
         d['district_ownership'] = self.district_ownership.as_dict()
         d['superintendents']    = [p.as_dict() for p in self.superintendents]
         d['schools']            = len(self.schools.all())
         del(d['_sa_instance_state'])
+        if ensure_strings:
+            self._set_dict_strings(d)
         return d
 
     def as_json(self):
-        d = self.as_dict()
-        d['last_update'] = d['last_update'].strftime(DATE_FMT) if d['last_update'] else None
-        d['longitude']   = str(self.longitude)
-        d['latitude']    = str(self.latitude)
-        return dumps(d)
+        return dumps(self.as_dict(ensure_strings=True), ensure_ascii=False).encode('utf8')
+
+    def _set_dict_strings(self, district_dict):
+        district_dict['last_update'] = district_dict['last_update'].strftime(DATE_FMT) \
+                                     if district_dict['last_update'] else None
+        district_dict['longitude']   = str(self.longitude)
+        district_dict['latitude']    = str(self.latitude)
 
 
 class Superintendent(db.Model):

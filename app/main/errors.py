@@ -1,12 +1,14 @@
-from flask import render_template
+from flask import redirect, flash, url_for
 from . import main
 
 
 @main.app_errorhandler(404)
 def page_not_found(e):
-    return render_template('404.html'), 404
+    flash("Couldn't find what you were looking for...")
+    return redirect(url_for('map', title=None)), 404
 
 
 @main.app_errorhandler(500)
 def internal_server_error(e):
-    return render_template('500.html'), 500
+    flash("Whoops, looks like we just logged an error...")
+    return  redirect(url_for('map', title=None)), 500
