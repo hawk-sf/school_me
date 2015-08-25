@@ -1,17 +1,93 @@
 L.mapbox.accessToken = 'pk.eyJ1IjoiaGF3ay1zZiIsImEiOiJlZWZiODAxYzA1M2NkOGMyNzc4MmU0MWVmYmIxZDNlMiJ9.xNP0mDW8M6tZ58ZOKRRjTw';
 
-function buildMap() {
-  var map = L.mapbox.map('map', 'hawk-sf.n7kjj3ke', { zoomControl: false })
-    .setView([37.742, -122.445], 13);
-  new L.Control.Zoom({ position: 'topright' }).addTo(map);
-}
-
-function getSchools (argument) {
-  // body...
+function getGeoJSONFeature(school) {
+  var description = '<i>' + school.levelName + ', ' + school.gradeSpan + '</i><br>';
+  description    += school.phone + '<br>';
+  description    += school.address + '<br>';
+  description    += school.zipCode + '<br>';
+  description    += school.website;
+  var geojson = {
+                 type: 'Feature',
+                 geometry: {
+                              type:        'Point',
+                              coordinates: [
+                                            parseFloat(school.longitude),
+                                            parseFloat(school.latitude)
+                                           ]
+                             },
+                 properties: {
+                              title:           school.school,
+                              description:     description,
+                              'marker-color':  '#1087bf',
+                              'marker-symbol': school.levelCode[0].toLowerCase()
+                              }
+                };
+  return geojson;
 }
 
 $(window).on('load', function() {
-  buildMap();
+  var map = L.mapbox.map('map',
+                         'hawk-sf.n7kjj3ke',
+                         {zoomControl: false}).setView([37.742, -122.445], 13);
+  new L.Control.Zoom({ position: 'topright' }).addTo(map);
+  var schoolLayer = L.mapbox.featureLayer().addTo(map);
+  var dataLayer   = L.mapbox.featureLayer().addTo(map);
+
+  function getSchool(cdsCode) {
+    $.ajax({
+      type: 'GET',
+      url:  '/api/school/' + cdsCode,
+    }).success(function(school) {
+      var geojson     = getGeoJSONFeature(school);
+      var schoolLayer = L.mapbox.featureLayer().addTo(map);
+      schoolLayer.setGeoJSON(geojson);
+    });
+  };
+
+  function getMapSchools() {
+    $('button#submit_address').prop('disabled', true);
+    var zipCode = $("form#address_form input#zip_code").val();
+    var street  = $("form#address_form input#street").val();
+    var codes   = $("form#address_form select#education_level_code :selected");
+    var levels  = '';
+    var pair    = '';
+    $.each(codes, function(n, sel) {
+      pair    = '&education_level_code=' + $(sel).val();
+      levels += pair;
+    });
+    var dataString = ('street='    + street +
+                      '&zip_code=' + zipCode +
+                      levels);
+    $.ajax({
+      type: 'POST',
+      url:  '/api/map_schools',
+      data: dataString
+    }).success(function(results) {
+      $.each(codes, function(n, sel) {
+        var level       = $(sel).val();
+        var featureList = [];
+        var geojson;
+        $.each(results[level], function(n, feature) {
+          geojson = getGeoJSONFeature(feature);
+          featureList.push(geojson);
+        });
+        schoolLayer.setGeoJSON({
+          "type":     "FeatureCollection",
+          "features": featureList
+        });
+        map.fitBounds(schoolLayer.getBounds());
+      });
+      var homeLayer   = L.mapbox.featureLayer().addTo(map);
+      var homeGeojson = results['home'];
+      homeGeojson.properties['title']         = 'Home';
+      homeGeojson.properties['description']   = homeGeojson.place_name;
+      homeGeojson.properties['marker-color']  = '#a3e46b';
+      homeGeojson.properties['marker-symbol'] = 'star-stroked';
+      homeLayer.setGeoJSON(homeGeojson);
+      $('#address_modal').modal('hide');
+      $('button#submit_address').prop('disabled', false);
+    });
+  }
 
   $('#address_modal').modal('show');
 
@@ -41,7 +117,10 @@ $(window).on('load', function() {
       },
       street: {
         required: false
-      }
+      },
+      education_level_code: {
+        required: true,
+      },
     },
     highlight: function(element) {
       $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
@@ -53,7 +132,7 @@ $(window).on('load', function() {
     errorLabelContainer: "#address_error_box ul",
     wrapper: "li",
     submitHandler: function(form) {
-      getSchools();
+      getMapSchools();
     }
   });
 })

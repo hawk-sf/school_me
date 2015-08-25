@@ -5,10 +5,10 @@ from . import main
 @main.app_errorhandler(404)
 def page_not_found(e):
     flash("Couldn't find what you were looking for...")
-    return redirect(url_for('map', title=None)), 404
+    return redirect(url_for('map')), 404
 
 
 @main.app_errorhandler(500)
 def internal_server_error(e):
     flash("Whoops, looks like we just logged an error...")
-    return  redirect(url_for('map', title=None)), 500
+    return redirect(url_for('map')), 500

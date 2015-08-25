@@ -2,6 +2,9 @@ import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+SF_DISTRICT_CDS = u'38684780000000'
+MAPBOX_PK       = os.environ.get('MAPBOX_PK') or 'pk.eyJ1IjoiaGF3ay1zZiIsImEiOiJlZWZiODAxYzA1M2NkOGMyNzc4MmU0MWVmYmIxZDNlMiJ9.xNP0mDW8M6tZ58ZOKRRjTw'
+
 
 class Config:
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
