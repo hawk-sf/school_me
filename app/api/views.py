@@ -8,21 +8,20 @@ from collections import defaultdict
 import requests as req
 
 
-@api.route('/map_schools', methods=['POST'])
+@api.route('/map_schools', methods=['GET'])
 def map_schools():
-    form      = SchoolsForm(request.form)
+    form      = SchoolsForm(request.args)
     levels    = form.education_level_code.data
-    print 'Levels: %s' % levels
     street    = form.street.data   if form.street.data   else ''
     zip_code  = form.zip_code.data if form.zip_code.data else ''
     address   = ' '.join([street, zip_code])
-    print 'Addy: %s' % address
     schools   = School.query.filter(School.district_id == SF_DISTRICT_CDS,
                                     School.status_type == u'Active',
                                     School.education_instruction_level_id.in_(levels)).all()
     home      = geocode_address(address)
     longitude, latitude = home['geometry']['coordinates']
-    distances = [get_distance(latitude, longitude, s.latitude, s.longitude) for s in schools]
+    distances = [get_distance(latitude, longitude, s.latitude, s.longitude)
+                 for s in schools]
     results   = defaultdict(lambda: [])
     for school, distance in zip(schools, distances):
         d = {
@@ -45,7 +44,7 @@ def map_schools():
     for key in results.iterkeys():
         results[key].sort(key = lambda d: d['distance'])
         results[key] = [s for s in results[key] if s['distance']]
-        results[key] = results[key][0:10]
+        results[key] = results[key][0:20]
     results['home']  = home
     return jsonify(results)
 
@@ -85,45 +84,59 @@ def geocode_address(address):
     return  geojson
 
 
-@api.route('/school/<cds_code>', methods=['GET'])
+@api.route('/schools/<cds_code>', methods=['GET'])
 def school(cds_code):
     school = School.query.filter_by(cds_code = cds_code).first()
-    result = school.as_dict(ensure_strings=True) if school else None
+    result = school.as_dict(ensure_strings = True) if school else None
     return jsonify(result)
 
 
-@api.route('/district/<cds_code>', methods=['GET'])
+@api.route('/districts/<cds_code>', methods=['GET'])
 def district(cds_code):
     district = District.query.filter_by(cds_code = cds_code).first()
-    result   = district.as_dict(ensure_strings=True) if district else None
+    result   = district.as_dict(ensure_strings = True) if district else None
     return jsonify(result)
 
 
-@api.route('/base_api', methods=['GET'])
-def base_api():
-    form     = BaseAPIForm(request.form)
+@api.route('/base_apis', methods=['GET'])
+def search_base_apis():
+    form     = BaseAPIForm(request.args)
     cds_code = form.cds_code.data
     try:
         year = int(form.year.data)
-    except Exception:
-        result = {}
+    except Exception, e:
+        result = {'error': e}
     else:
-        base_api = BaseAPI.query.filter_by(cds_code = cds_code, year = year).first()
-        result   = base_api.as_dict(ensure_strings=True) if base_api else None
+        base_api = BaseAPI.query.filter_by(school_id = cds_code, year = year).first()
+        result   = base_api.as_dict() if base_api else {}
     finally:
         return jsonify(result)
 
 
-@api.route('/growth_api', methods=['GET'])
-def growth_api():
-    form     = GrowthAPIForm(request.form)
+@api.route('/base_apis/<_id>', methods=['GET'])
+def get_base_api(_id):
+    base_api = BaseAPI.query.filter_by(id = _id).first()
+    result   = base_api.as_dict() if base_api else {}
+    return jsonify(result)
+
+
+@api.route('/growth_apis', methods=['GET'])
+def search_growth_apis():
+    form     = GrowthAPIForm(request.args)
     cds_code = form.cds_code.data
     try:
         year = int(form.year.data)
-    except Exception:
-        result = {}
+    except Exception, e:
+        result = {'error': e}
     else:
-        growth_api = GrowthAPI.query.filter_by(cds_code = cds_code, year = year).first()
-        result     = growth_api.as_dict(ensure_strings=True) if growth_api else None
+        growth_api = GrowthAPI.query.filter_by(school_id = cds_code, year = year).first()
+        result     = growth_api.as_dict() if growth_api else {}
     finally:
         return jsonify(result)
+
+
+@api.route('/growth_api/<_id>', methods=['GET'])
+def get_growth_api(_id):
+    growth_api = GrowthAPI.query.filter_by(id = _id).first()
+    result     = growth_api.as_dict() if base_api else {}
+    return jsonify(result)

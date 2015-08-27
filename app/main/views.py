@@ -1,9 +1,10 @@
 from collections import Counter
-from flask       import render_template, session
+from flask       import render_template
 from .           import main
 from ..          import db
-from ..models    import School
+from ..models    import School, BaseAPI, GrowthAPI
 from .forms      import AddressForm
+from ..api.forms import BaseAPIForm, GrowthAPIForm
 from config      import SF_DISTRICT_CDS
 
 
@@ -17,12 +18,22 @@ def get_education_levels(schools):
 def map():
     sf_schools = School.query.filter_by(district_id = SF_DISTRICT_CDS,
                                         status_type = u'Active').all()
-    levels     = get_education_levels(sf_schools)
-    form       = AddressForm()
-    form.education_level_code.choices = [(l['code'], l['name']) for l in levels]
+
+    address_form = AddressForm()
+    levels       = get_education_levels(sf_schools)
+    address_form.education_level_code.choices = [(l['code'], l['name']) for l in levels]
+
+    base_api_form = BaseAPIForm()
+    years         = db.session.query(BaseAPI.year).distinct().all()
+    base_api_form.year.choices = [(y[0], y[0]) for y in years]
+
+    growth_api_form = GrowthAPIForm()
+    years           = db.session.query(GrowthAPI.year).distinct().all()
+    growth_api_form.year.choices = [(y[0], y[0]) for y in years]
 
     return render_template('map.html',
-                           map = True,
-                           education_levels = levels,
-                           address_form     = form)
+                           map             = True,
+                           address_form    = address_form,
+                           base_api_form   = base_api_form,
+                           growth_api_form = growth_api_form)
 

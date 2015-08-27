@@ -8,15 +8,47 @@
 
 <div class='overlay'>
     <div class="panel panel-default">
-        <div class="panel-heading">Panel heading without title</div>
+        <div class="panel-heading">School Options</div>
         <div class="panel-body">
-          Panel content
+          Some choices about the schools
         </div>
     </div>
-    <div class="panel panel-default">
-        <!-- <div class="panel-heading">Panel heading without title</div> -->
-        <div class="panel-body">
-          Panel content
+
+    <div class="btn-group-vertical" role="group" aria-label="...">
+        <button id="distance_button" type="button" class="btn btn-block btn-default">
+            Distance
+        </button>
+        <button id="circles_button" type="button" class="btn btn-block btn-default">Cirlces</button>
+
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                API
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a id="base_api_year_options" href="#">Base</a></li>
+                <div id="base_api_year_select" style="display:none; padding:10px">
+                    <form class="form-inline">
+                        <div class="input-group">
+                            {{ render_field(base_api_form.year, class="form-control", label_visible=false, id='base_api_year') }}
+                        </div>
+                        <button id="view_base_api" class="btn btn-default view_data" type="button">
+                            <span class="glyphicon glyphicon-eye-open"></span>
+                        </button>
+                    </form>
+                </div>
+                <li><a id="growth_api_year_options" href="#">Growth</a></li>
+                <div id="growth_api_year_select" style="display:none; padding:10px">
+                    <form class="form-inline">
+                        <div class="input-group">
+                            {{ render_field(growth_api_form.year, class="form-control", label_visible=false, id='growth_api_year') }}
+                        </div>
+                        <button id="view_growth_api" class="btn btn-default view_data" type="button">
+                            <span class="glyphicon glyphicon-eye-open"></span>
+                        </button>
+                    </form>  
+                </div>
+            </ul>
         </div>
     </div>
 </div>

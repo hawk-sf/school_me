@@ -18,6 +18,7 @@ function getGeoJSONFeature(school) {
                  properties: {
                               title:           school.school,
                               description:     description,
+                              cdsCode:         school.cdsCode,
                               'marker-color':  '#1087bf',
                               'marker-symbol': school.levelCode[0].toLowerCase()
                               }
@@ -31,12 +32,13 @@ $(window).on('load', function() {
                          {zoomControl: false}).setView([37.742, -122.445], 13);
   new L.Control.Zoom({ position: 'topright' }).addTo(map);
   var schoolLayer = L.mapbox.featureLayer().addTo(map);
-  var dataLayer   = L.mapbox.featureLayer().addTo(map);
+  var dataCircles = [];
+  var dataLabels  = [];
 
   function getSchool(cdsCode) {
     $.ajax({
       type: 'GET',
-      url:  '/api/school/' + cdsCode,
+      url:  '/api/schools/' + cdsCode,
     }).success(function(school) {
       var geojson     = getGeoJSONFeature(school);
       var schoolLayer = L.mapbox.featureLayer().addTo(map);
@@ -59,7 +61,7 @@ $(window).on('load', function() {
                       '&zip_code=' + zipCode +
                       levels);
     $.ajax({
-      type: 'POST',
+      type: 'GET',
       url:  '/api/map_schools',
       data: dataString
     }).success(function(results) {
@@ -89,6 +91,82 @@ $(window).on('load', function() {
     });
   }
 
+  function getBaseAPIs(year) {
+    var geojson = schoolLayer.getGeoJSON();
+    $.each(geojson.features, function(n, feature) {
+      var cdsCode = feature.properties.cdsCode;
+      var dataString = ('cds_code=' + cdsCode +
+                        '&year='   + year);
+      $.ajax({
+        type:  'GET',
+        url:   '/api/base_apis',
+        data:  dataString,
+        async: false
+      }).success(function(results) {
+        feature.properties.circleArea = results.apib;
+      });
+    });
+  }
+
+  function getGrowthAPIs(year) {
+    var geojson = schoolLayer.getGeoJSON();
+    $.each(geojson.features, function(n, feature) {
+      var cdsCode = feature.properties.cdsCode;
+      var dataString = ('cds_code=' + cdsCode +
+                        '&year='   + year);
+      $.ajax({
+        type:  'GET',
+        url:   '/api/growth_apis',
+        data:  dataString,
+        async: false
+      }).success(function(results) {
+        feature.properties.circleArea = results.growth;
+      });
+    });
+  }
+
+  function setDataCircles() {
+    $.each(dataCircles, function(idx, circle) {
+      map.removeLayer(circle);
+    });
+    $.each(dataLabels, function(idx, label) {
+      map.removeLayer(label);
+    });
+    var geojson = schoolLayer.getGeoJSON();
+    $.each(geojson.features, function(n, feature) {
+      var radius = Math.sqrt(feature.properties.circleArea * 1000/Math.PI);
+      try {
+        var circle = L.circle(
+                              feature.geometry.coordinates.reverse(),
+                              radius,
+                              {
+                               color:       'purple',
+                               weight:      .5,
+                               fillColor:   '#c091e6',
+                               fillOpacity: 0.75,
+                               // zIndexOffset: 999
+                              }
+                             ).bindPopup(feature.properties.circleArea.toString()).addTo(map);
+        dataCircles.push(circle);
+        var icon  = L.divIcon({
+                               html:      feature.properties.circleArea,
+                               className: 'dataLabel'
+                              });
+        // var label = L.marker(feature.geometry.coordinates.reverse(),
+        //                      {
+        //                       icon:         icon,
+        //                       // zIndexOffset: 1000
+        //                      }).addTo(map);
+        // var label = L.marker(feature.geometry.coordinates.reverse())
+        //     .bindLabel(feature.properties.circleArea, { noHide: true })
+        //     .addTo(map);
+        // dataLabels.push(label);
+      } catch (e) {
+        console.log(e);
+      }
+    });
+  }
+
   $('#address_modal').modal('show');
 
   $.validator.addMethod("zipCode", function (value, element) {
@@ -107,7 +185,7 @@ $(window).on('load', function() {
       };
 
       return this.optional(element) || (validZip);
-    }, "Please enter a valid zip (ex: 94110 or 94110-7421)");  
+    }, "Please enter a valid zip (ex: 94110 or 94110-7421)");
 
   $('form#address_form').validate({
     rules: {
@@ -134,6 +212,48 @@ $(window).on('load', function() {
     submitHandler: function(form) {
       getMapSchools();
     }
+  });
+
+  $('body').on('click','a#base_api_year_options', function(e) {
+    e.stopPropagation();
+    $('#base_api_year_select').toggle();
+  });
+
+  $('select#base_api_year').click(function (e) {
+    e.stopPropagation();
+  });
+
+  $('body').on('click','button#view_base_api', function(e) {
+    $('button.view_data').prop('disabled', true);
+    var year = $("select#base_api_year").val();
+    getBaseAPIs(year);
+    setDataCircles();
+    $('button.view_data').prop('disabled', false);
+  });
+
+  $('body').on('click','a#growth_api_year_options', function(e) {
+    e.stopPropagation();
+    $('#growth_api_year_select').toggle();
+  });
+
+  $('body').on('click','button#view_growth_api', function(e) {
+    $('button.view_data').prop('disabled', true);
+    var year = $("select#growth_api_year").val();
+    getGrowthAPIs(year);
+    setDataCircles();
+    $('button.view_data').prop('disabled', false);
+  });
+
+  $('select#growth_api_year').click(function (e) {
+    e.stopPropagation();
+  });
+
+  $('body').on('click', 'button#distance_button', function() {
+    getBaseAPIs(2011);
+  });
+
+  $('body').on('click', 'button#circles_button', function() {
+    setDataCircles();
   });
 })
 
