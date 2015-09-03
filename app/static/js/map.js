@@ -28,6 +28,40 @@ function getGeoJSONFeature(school) {
   return geojson;
 }
 
+
+
+
+
+
+
+
+
+
+
+function getColor(val, max, min) {
+  if (val < 0) {
+    return '#000000';
+  };
+  if (min < 0) {
+    min = 0;
+  };
+  var binSize = Math.floor((max - min) / 5);
+  return val > max - binSize * 1 ? '#810F7C' :
+         val > max - binSize * 2 ? '#8856A7' :
+         val > max - binSize * 3 ? '#8C96C6' :
+         val > max - binSize * 4 ? '#B3CDE3' :
+                                   '#EDF8FB';
+  // return val < max - binSize * 1 ? '#F7FCFD' :
+  //        val < max - binSize * 2 ? '#E0ECF4' :
+  //        val < max - binSize * 3 ? '#BFD3E6' :
+  //        val < max - binSize * 4 ? '#9EBCDA' :
+  //        val < max - binSize * 5 ? '#8C96C6' :
+  //        val < max - binSize * 6 ? '#8C6BB1' :
+  //        val < max - binSize * 7 ? '#88419D' :
+  //        val < max - binSize * 8 ? '#810F7C' :
+  //                                  '#4D004B';
+}
+
 $(window).on('load', function() {
   var map = L.mapbox.map('map',
                          'hawk-sf.n7kjj3ke',
@@ -166,7 +200,7 @@ $(window).on('load', function() {
                               feature.geometry.coordinates.reverse(),
                               radius,
                               {
-                               color:       'purple',
+                               color:       'white',
                                weight:      .5,
                                fillColor:   '#c091e6',
                                fillOpacity: 0.75,
@@ -181,18 +215,39 @@ $(window).on('load', function() {
   }
 
   function updateDataCircles() {
-    console.log('update')
-    var geojson = schoolLayer.getGeoJSON();
-    var circles = circleLayer.getLayers();
-    var features = {};
+    var geojson   = schoolLayer.getGeoJSON();
+    var circles   = circleLayer.getLayers();
+    var features  = {};
+    var dataArray = [];
     $.each(geojson.features, function(n, feature) {
       features[feature.properties.cdsCode] = feature;
+      dataArray.push(feature.properties.circleArea);
     });
+    console.log(dataArray)
+    var maxData = Math.max.apply(null, dataArray);
+    var minData = Math.min.apply(null, dataArray);
+    var scaler;
+    if (maxData < 200 || (minData > -200 && minData < 0)) {
+      scaler = 20;
+    } else {
+      scaler = 1;
+    };
+    console.log('Max: ', maxData)
+    console.log('Min: ', minData)
     circleLayer.eachLayer(function(circle){
       var feature = features[circle.options.id];
-      console.log('updating ', feature.properties.title)
-      var radius = Math.sqrt(feature.properties.circleArea * 1000/Math.PI);
+      var data    = feature.properties.circleArea;
+      var radius  = Math.sqrt(Math.abs(data * scaler) * 1000/Math.PI);
       circle.setRadius(radius);
+      circle.setStyle({
+                       color:       'white',
+                       weight:      .5,
+                       fillColor:   getColor(data, maxData, minData),
+                       fillOpacity: 0.75,
+                       id:          feature.properties.cdsCode
+                      });
+      circle.unbindPopup();
+      circle.bindPopup(data.toString());
     });
   }
 
