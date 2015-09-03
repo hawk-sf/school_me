@@ -51,15 +51,6 @@ function getColor(val, max, min) {
          val > max - binSize * 3 ? '#8C96C6' :
          val > max - binSize * 4 ? '#B3CDE3' :
                                    '#EDF8FB';
-  // return val < max - binSize * 1 ? '#F7FCFD' :
-  //        val < max - binSize * 2 ? '#E0ECF4' :
-  //        val < max - binSize * 3 ? '#BFD3E6' :
-  //        val < max - binSize * 4 ? '#9EBCDA' :
-  //        val < max - binSize * 5 ? '#8C96C6' :
-  //        val < max - binSize * 6 ? '#8C6BB1' :
-  //        val < max - binSize * 7 ? '#88419D' :
-  //        val < max - binSize * 8 ? '#810F7C' :
-  //                                  '#4D004B';
 }
 
 $(window).on('load', function() {
@@ -110,6 +101,8 @@ $(window).on('load', function() {
           console.log(e);
         }
       });
+      updateDataCircles();
+      updateDataLabels();
     });
   }
 
@@ -141,6 +134,8 @@ $(window).on('load', function() {
           console.log(e);
         }
       });
+      updateDataCircles();
+      updateDataLabels();
     }); 
   }
 
@@ -358,8 +353,6 @@ $(window).on('load', function() {
     $('button.view_data').prop('disabled', true);
     var year = $("select#base_api_year").val();
     getBaseAPIs(year);
-    updateDataCircles();
-    updateDataLabels();
     $('button.view_data').prop('disabled', false);
   });
 
@@ -373,8 +366,6 @@ $(window).on('load', function() {
     $('button.view_data').prop('disabled', true);
     var year = $("select#growth_api_year").val();
     getGrowthAPIs(year);
-    updateDataCircles();
-    updateDataLabels();
     $('button.view_data').prop('disabled', false);
   });
 
