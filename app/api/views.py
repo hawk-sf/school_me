@@ -100,17 +100,21 @@ def district(cds_code):
 
 @api.route('/base_apis', methods=['GET'])
 def search_base_apis():
-    form     = BaseAPIForm(request.args)
-    cds_code = form.cds_code.data
+    form      = BaseAPIForm(request.args)
+    cds_codes = form.cds_codes.data
     try:
-        year = int(form.year.data)
+        year      = int(form.year.data)
+        base_apis = []
+        for cds_code in cds_codes:
+            api = BaseAPI.query.filter_by(school_id = cds_code, year = year).first()
+            if api:
+                base_apis.append(api)
     except Exception, e:
         result = {'error': e}
     else:
-        base_api = BaseAPI.query.filter_by(school_id = cds_code, year = year).first()
-        result   = base_api.as_dict() if base_api else {}
+        result = [api.as_dict() for api in base_apis]
     finally:
-        return jsonify(result)
+        return jsonify({'results': result})
 
 
 @api.route('/base_apis/<_id>', methods=['GET'])
@@ -122,21 +126,25 @@ def get_base_api(_id):
 
 @api.route('/growth_apis', methods=['GET'])
 def search_growth_apis():
-    form     = GrowthAPIForm(request.args)
-    cds_code = form.cds_code.data
+    form      = GrowthAPIForm(request.args)
+    cds_codes = form.cds_codes.data
     try:
-        year = int(form.year.data)
+        year        = int(form.year.data)
+        growth_apis = []
+        for cds_code in cds_codes:
+            api = GrowthAPI.query.filter_by(school_id = cds_code, year = year).first()
+            if api:
+                growth_apis.append(api)
     except Exception, e:
         result = {'error': e}
     else:
-        growth_api = GrowthAPI.query.filter_by(school_id = cds_code, year = year).first()
-        result     = growth_api.as_dict() if growth_api else {}
+        result = [api.as_dict() for api in growth_apis]
     finally:
-        return jsonify(result)
+        return jsonify({'results': result})
 
 
 @api.route('/growth_api/<_id>', methods=['GET'])
 def get_growth_api(_id):
     growth_api = GrowthAPI.query.filter_by(id = _id).first()
-    result     = growth_api.as_dict() if base_api else {}
+    result     = growth_api.as_dict() if growth_api else {}
     return jsonify(result)

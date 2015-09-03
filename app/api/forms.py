@@ -10,10 +10,10 @@ class SchoolsForm(Form):
 
 
 class BaseAPIForm(Form):
-    cds_code = StringField(u'CDS Code', validators=[Required()])
-    year     = SelectField(u'Year', validators=[Required()])
+    cds_codes = SelectMultipleField(u'CDS Codes', validators=[Required()])
+    year      = SelectField(u'Year', validators=[Required()])
 
 
 class GrowthAPIForm(Form):
-    cds_code = StringField(u'CDS Code', validators=[Required()])
-    year     = SelectField(u'Year', validators=[Required()])
+    cds_codes = SelectMultipleField(u'CDS Codes', validators=[Required()])
+    year      = SelectField(u'Year', validators=[Required()])

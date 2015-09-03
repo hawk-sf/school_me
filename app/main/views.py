@@ -1,5 +1,6 @@
+import os
 from collections import Counter
-from flask       import render_template
+from flask       import render_template, send_from_directory
 from .           import main
 from ..          import db
 from ..models    import School, BaseAPI, GrowthAPI
@@ -37,3 +38,8 @@ def map():
                            base_api_form   = base_api_form,
                            growth_api_form = growth_api_form)
 
+
+@main.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(main.root_path, 'static'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
