@@ -28,15 +28,34 @@ function getGeoJSONFeature(school) {
   return geojson;
 }
 
+Number.prototype.toRad = function() {
+   return this * Math.PI / 180;
+}
 
+Number.prototype.toDeg = function() {
+   return this * 180 / Math.PI;
+}
 
+L.LatLng.prototype.destinationPoint = function(bearing, distance) {
+  // Reference: http://www.movable-type.co.uk/scripts/latlong.html
+  var distance = distance / 6373000;
+  var bearing  = bearing.toRad();
 
+  var lat1 = this.lat.toRad();
+  var lon1 = this.lng.toRad();
+  var lat2 = Math.asin(Math.sin(lat1) * Math.cos(distance) +
+                       Math.cos(lat1) * Math.sin(distance) * Math.cos(bearing));
+  var lon2 = lon1 + Math.atan2(Math.sin(bearing) * Math.sin(distance) *
+                               Math.cos(lat1),
+                               Math.cos(distance) - Math.sin(lat1) *
+                               Math.sin(lat2));
 
+  return new L.LatLng(lat2.toDeg(), lon2.toDeg());
+}
 
-
-
-
-
+function getCornerCircleDistance(radius) {
+  return Math.sqrt(2 * Math.pow(radius, 2))
+}
 
 function getColor(val, max, min) {
   if (val < 0) {
@@ -61,6 +80,20 @@ $(window).on('load', function() {
   var schoolLayer = L.mapbox.featureLayer().addTo(map);
   var circleLayer = L.layerGroup().addTo(map);
   var labelLayer  = L.layerGroup().addTo(map);
+
+  var bounds       = map.getBounds();
+  var swLatLng     = bounds.getSouthWest();
+  var cornerCircle = L.circle(
+                              swLatLng.destinationPoint(45, getCornerCircleDistance(1000)),
+                              1000,
+                              {
+                               color:       'purple',
+                               weight:      .5,
+                               fillColor:   '#c091e6',
+                               fillOpacity: 0.75,
+                               id:          'cornerCircle'
+                              }
+                             ).addTo(map);
 
   function getSchool(cdsCode) {
     $.ajax({
@@ -292,6 +325,12 @@ $(window).on('load', function() {
     });
   }
 
+  function updateCornerCircle() {
+    bounds   = map.getBounds();
+    swLatLng = bounds.getSouthWest();;
+    cornerCircle.setLatLng(swLatLng.destinationPoint(45, getCornerCircleDistance(1000)));
+  }
+
   $('#address_modal').modal('show');
 
   $.validator.addMethod("zipCode", function (value, element) {
@@ -393,6 +432,10 @@ $(window).on('load', function() {
     labelLayer.eachLayer(function(layer){
       console.log(layer);
     });
+  });
+
+  map.on('move', function() {
+    updateCornerCircle();
   });
 })
 
