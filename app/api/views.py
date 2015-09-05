@@ -143,7 +143,7 @@ def search_growth_apis():
         return jsonify({'results': result})
 
 
-@api.route('/growth_api/<_id>', methods=['GET'])
+@api.route('/growth_apis/<_id>', methods=['GET'])
 def get_growth_api(_id):
     growth_api = GrowthAPI.query.filter_by(id = _id).first()
     result     = growth_api.as_dict() if growth_api else {}

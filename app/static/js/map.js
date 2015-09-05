@@ -79,21 +79,40 @@ $(window).on('load', function() {
   new L.Control.Zoom({ position: 'topright' }).addTo(map);
   var schoolLayer = L.mapbox.featureLayer().addTo(map);
   var circleLayer = L.layerGroup().addTo(map);
-  var labelLayer  = L.layerGroup().addTo(map);
 
-  var bounds       = map.getBounds();
-  var swLatLng     = bounds.getSouthWest();
-  var cornerCircle = L.circle(
-                              swLatLng.destinationPoint(45, getCornerCircleDistance(1000)),
-                              1000,
-                              {
-                               color:       'purple',
-                               weight:      .5,
-                               fillColor:   '#c091e6',
-                               fillOpacity: 0.75,
-                               id:          'cornerCircle'
-                              }
-                             ).addTo(map);
+  var maxData       = 0;
+  var minData       = 0;
+  var distances     = getPixelDistance();
+  var cornerPadding = distances[2] * 10;
+  var bounds        = map.getBounds();
+  var swLatLng      = bounds.getSouthWest();
+  var cornerCircle  = L.circle(
+                               swLatLng.destinationPoint(45, getCornerCircleDistance(0 + cornerPadding)),
+                               0,
+                               {
+                                color:       'purple',
+                                weight:      .5,
+                                fillColor:   '#c091e6',
+                                fillOpacity: 0,
+                                id:          'cornerCircle'
+                               }
+                              ).on('mouseover', function() {
+                                this.bringToFront();
+                              }).addTo(map);
+
+  var icon  = L.divIcon({
+                         html:       '',
+                         className:  'dataLabel',
+                         iconSize:   [48, 48],
+                         iconAnchor: [24, 12],
+                         id:         'cornerLabel'
+                        });
+  var coordinates = swLatLng.destinationPoint(45, getCornerCircleDistance(1000 + cornerPadding));
+  var cornerLabel = L.marker(coordinates,
+                       {
+                        icon: icon,
+                        id:   'cornerLabel'
+                       }).addTo(map);
 
   function getSchool(cdsCode) {
     $.ajax({
@@ -114,6 +133,7 @@ $(window).on('load', function() {
       pair      = '&cds_codes=' + feature.properties.cdsCode;
       cdsCodes += pair;
     });
+
     var dataString = 'year=' + year + cdsCodes;
     $.ajax({
       type:  'GET',
@@ -134,8 +154,15 @@ $(window).on('load', function() {
           console.log(e);
         }
       });
-      updateDataCircles();
+      var dataRange = updateDataCircles();
       updateDataLabels();
+
+      $.ajax({
+        type:  'GET',
+        url:   '/api/base_apis/38684780000000_' + year,
+      }).success(function(api) {
+        updateCornerCircle(api.apib, dataRange[0], dataRange[1]);
+      });
     });
   }
 
@@ -147,6 +174,7 @@ $(window).on('load', function() {
       pair      = '&cds_codes=' + feature.properties.cdsCode;
       cdsCodes += pair;
     });
+
     var dataString = 'year=' + year + cdsCodes;
     $.ajax({
       type:  'GET',
@@ -167,9 +195,16 @@ $(window).on('load', function() {
           console.log(e);
         }
       });
-      updateDataCircles();
+      var dataRange = updateDataCircles();
       updateDataLabels();
-    }); 
+
+      $.ajax({
+        type:  'GET',
+        url:   '/api/growth_apis/38684780000000_' + year,
+      }).success(function(api) {
+        updateCornerCircle(api.growth, dataRange[0], dataRange[1]);
+      });
+    });
   }
 
   function getMapSchools() {
@@ -213,7 +248,6 @@ $(window).on('load', function() {
       homeGeojson.properties['marker-symbol'] = 'star-stroked';
       homeLayer.setGeoJSON(homeGeojson);
       initDataCircles();
-      initDataLabels();
       $('#address_modal').modal('hide');
       $('button#submit_address').prop('disabled', false);
     });
@@ -234,7 +268,7 @@ $(window).on('load', function() {
                                fillOpacity: 0.75,
                                id:          feature.properties.cdsCode
                               }
-                             ).bindPopup(feature.properties.circleArea.toString());
+                             );
         circleLayer.addLayer(circle);
       } catch(e) {
         console.log(e);
@@ -244,24 +278,17 @@ $(window).on('load', function() {
 
   function updateDataCircles() {
     var geojson   = schoolLayer.getGeoJSON();
-    var circles   = circleLayer.getLayers();
     var features  = {};
     var dataArray = [];
     $.each(geojson.features, function(n, feature) {
       features[feature.properties.cdsCode] = feature;
       dataArray.push(feature.properties.circleArea);
     });
-    console.log(dataArray)
-    var maxData = Math.max.apply(null, dataArray);
-    var minData = Math.min.apply(null, dataArray);
-    var scaler;
-    if (maxData < 200 || (minData > -200 && minData < 0)) {
-      scaler = 20;
-    } else {
-      scaler = 1;
-    };
-    console.log('Max: ', maxData)
-    console.log('Min: ', minData)
+
+    maxData = Math.max.apply(null, dataArray);
+    minData = Math.min.apply(null, dataArray);
+    var scaler = getCircleScaler();
+
     circleLayer.eachLayer(function(circle){
       var feature = features[circle.options.id];
       var data    = feature.properties.circleArea;
@@ -274,61 +301,90 @@ $(window).on('load', function() {
                        fillOpacity: 0.75,
                        id:          feature.properties.cdsCode
                       });
-      circle.unbindPopup();
-      circle.bindPopup(data.toString());
     });
+
+    return [maxData, minData];
   }
 
-  function initDataLabels() {
-    var geojson = schoolLayer.getGeoJSON();
-    $.each(geojson.features, function(n, feature) {
-      try {
-        var icon  = L.divIcon({
-                               html:       feature.properties.dataLabel,
-                               className:  'dataLabel',
-                               iconSize:   [36, 36],
-                               iconAnchor: [18,-6],
-                               id:         feature.properties.cdsCode
-                              });
-        var coordinates = feature.geometry.coordinates.reverse();
-        coordinates[1] -= 0.01;
-        var label = L.marker(coordinates,
-                             {
-                              icon: icon,
-                              zIndexOffset: 1000,
-                              id:   feature.properties.cdsCode
-                             }).addTo(map);
-        labelLayer.addLayer(label);
-      } catch (e) {
-        console.log(e);
-      }
-    });
+  function getCircleScaler() {
+    if (maxData < 200 || (minData > -200 && minData < 0)) {
+      scaler = 20;
+    } else {
+      scaler = 1;
+    };
+    return scaler;
   }
 
   function updateDataLabels() {
-    var geojson  = schoolLayer.getGeoJSON();
-    var labels   = labelLayer.getLayers();
-    var features = {};
-    $.each(geojson.features, function(n, feature) {
-      features[feature.properties.cdsCode] = feature;
-    });
-    labelLayer.eachLayer(function(label){
-      var feature = features[label.options.id];
-      var icon    = L.divIcon({
-                                 html:       feature.properties.dataLabel,
-                                 className:  'dataLabel',
-                                 iconSize:   [36, 36],
-                                 iconAnchor: [18,-6],
-                                 id:         feature.properties.cdsCode
-                                });
+    schoolLayer.eachLayer(function(label){
+      var dataLabelClass;
+      if (label.feature.properties.circleArea < 0) {
+        console.log('negative!')
+        dataLabelClass = 'dataLabel-negative';
+      } else {
+        dataLabelClass = 'dataLabel';
+      }
+      var icon = L.divIcon({
+                            html:       label.feature.properties.dataLabel,
+                            className:  dataLabelClass,
+                            iconSize:   [48, 48],
+                            iconAnchor: [24, 12],
+                            id:         label.feature.properties.cdsCode
+                           });
       label.setIcon(icon);
     });
   }
 
-  function updateCornerCircle() {
-    bounds   = map.getBounds();
-    swLatLng = bounds.getSouthWest();;
-    cornerCircle.setLatLng(swLatLng.destinationPoint(45, getCornerCircleDistance(1000)));
+  function updateCornerCircle(circleArea) {
+    var scaler    = getCircleScaler();
+    var radius    = Math.sqrt(Math.abs(circleArea * scaler) * 1000/Math.PI);
+    distances     = getPixelDistance();
+    cornerPadding = distances[2] * 10;
+    bounds        = map.getBounds();
+    swLatLng      = bounds.getSouthWest();
+    cornerCircle.setStyle({
+                           color:       'white',
+                           weight:      .5,
+                           fillColor:   getColor(circleArea, maxData, minData),
+                           fillOpacity: 0.75,
+                           id:          'cornerCircle'
+                          });
+    cornerCircle.setRadius(radius);
+    cornerCircle.setLatLng(swLatLng.destinationPoint(45, getCornerCircleDistance(radius + cornerPadding)))
+
+    cornerLabel.setLatLng(swLatLng.destinationPoint(45, getCornerCircleDistance(radius + cornerPadding)));
+
+    if (radius > 0) {
+      var icon = L.divIcon({
+                        html:       circleArea,
+                        className:  'dataLabel',
+                        iconSize:   [48, 48],
+                        iconAnchor: [24, 12],
+                        id:         'cornerLabel'
+                       });
+      cornerLabel.setIcon(icon);
+
+      var radiusPixels = 2 * radius / distances[0];
+      var divPadding   = 10 + radiusPixels;
+      $('div.corner').css({'padding-bottom': divPadding + 'px'});
+      $('div.corner').show();
+    };
+  }
+
+  function getPixelDistance() {
+    var centerLatLng = map.getCenter();
+    var centerPoint  = map.latLngToContainerPoint(centerLatLng);
+    var pointX       = [centerPoint.x + 1, centerPoint.y];
+    var pointY       = [centerPoint.x, centerPoint.y + 1];
+    var pointDiag    = [centerPoint.x + 1, centerPoint.y + 1];
+    var latLngCenter = map.containerPointToLatLng(centerPoint);
+    var latLngX      = map.containerPointToLatLng(pointX);
+    var latLngY      = map.containerPointToLatLng(pointY);
+    var latLngDiag   = map.containerPointToLatLng(pointDiag);
+    var distanceX    = latLngCenter.distanceTo(latLngX);
+    var distanceY    = latLngCenter.distanceTo(latLngY);
+    var distanceDiag = latLngCenter.distanceTo(latLngDiag);
+    return [distanceX, distanceY, distanceDiag]
   }
 
   $('#address_modal').modal('show');
@@ -376,6 +432,11 @@ $(window).on('load', function() {
     submitHandler: function(form) {
       getMapSchools();
     }
+  });
+
+  $('body').on('click', 'button#api_button', function(e) {
+    $('div#base_api_year_select').show();
+    $('div#growth_api_year_select').show();
   });
 
   $('body').on('click','a#base_api_year_options', function(e) {
@@ -428,14 +489,13 @@ $(window).on('load', function() {
     circleLayer.eachLayer(function(layer){
       console.log(layer);
     });
-    console.log("Data")
-    labelLayer.eachLayer(function(layer){
-      console.log(layer);
-    });
   });
 
   map.on('move', function() {
-    updateCornerCircle();
+    var radius = cornerCircle.getRadius();
+    var scaler = getCircleScaler();
+    var area   = (Math.PI * Math.pow(radius, 2)) / scaler / 1000;
+    updateCornerCircle(Math.floor(area));
   });
 })
 

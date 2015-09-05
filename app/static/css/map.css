@@ -13,8 +13,25 @@
   padding:  10px;
 }
 
+.corner {
+  position: absolute;
+  z-index:  99;
+  bottom:   0;
+  padding:  10px;
+}
+
 .dataLabel {
-  font-size:   2em;
-  font-weight: 700;
-  font-color:  #c091e6;
+  font-size:      2em;
+  font-weight:    700;
+  color:          '#000000';
+  text-align:     center;
+  vertical-align: middle;
+}
+
+.dataLabel-negative {
+  font-size:      2em;
+  font-weight:    700;
+  color:          '#EDF8FB';
+  text-align:     center;
+  vertical-align: middle;
 }
