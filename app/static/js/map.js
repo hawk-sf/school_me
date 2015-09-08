@@ -477,9 +477,10 @@ $(window).on('load', function() {
       if (sfZipCodes.indexOf(value.slice(0, 5)) > -1) {
         localZip = true;
       };
+      goodZip = validZip && localZip;
 
-      return this.optional(element) || (validZip);
-    }, "Please enter a valid zip (ex: 94110 or 94110-7421)");
+      return this.optional(element) || (localZip);
+    }, "Please enter a valid SF zip (ex: 94110 or 94110-7421)");
 
   $('form#address_form').validate({
     rules: {
