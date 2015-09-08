@@ -22,15 +22,16 @@ def map():
 
     address_form = AddressForm()
     levels       = get_education_levels(sf_schools)
-    address_form.education_level_code.choices = [(l['code'], l['name']) for l in levels]
+    address_form.education_level_code.choices = sorted([(l['code'], l['name']) for l in levels],
+                                                       key = lambda l: l[0])
 
     base_api_form = BaseAPIForm()
-    years         = db.session.query(BaseAPI.year).distinct().all()
-    base_api_form.year.choices = [(y[0], y[0]) for y in years]
+    years         = (db.session.query(BaseAPI.year).distinct().all())
+    base_api_form.year.choices = sorted([(y[0], y[0]) for y in years], reverse = True)
 
     growth_api_form = GrowthAPIForm()
     years           = db.session.query(GrowthAPI.year).distinct().all()
-    growth_api_form.year.choices = [(y[0], y[0]) for y in years]
+    growth_api_form.year.choices = sorted([(y[0], y[0]) for y in years], reverse = True)
 
     return render_template('map.html',
                            map             = True,

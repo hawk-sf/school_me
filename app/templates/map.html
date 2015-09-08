@@ -14,9 +14,18 @@
         </div>
     </div>
 
+    <div id="viewed_data_info" class="panel panel-default" style="display:none;">
+        <div class="panel-body">
+            <ul class="list-inline">
+                <li id="viewed_data_type"><strong>...</strong></li>
+                <li id="viewed_data_year">...</li>
+            </el>
+        </div>
+    </div>
+
     <div class="btn-group-vertical" role="group" aria-label="...">
         <button id="clear_button" type="button" class="btn btn-block btn-default">
-            Clear
+            Distance
         </button>
         <button id="log_button" type="button" class="btn btn-block btn-default">Log</button>
 
@@ -54,9 +63,18 @@
 </div>
 
 <div class="corner" style="display:none;">
-    <div class="panel panel-default">
-        <div class="panel-body">
-          District info
+    <div class="btn-group-vertical" role="group" aria-label="...">
+        <div class="dropup">
+            <button id="corner_choice" type="button" class="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+                <span id="choice">District Average</span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a id="view_district_avg" class="view_data" href="#">District Average</a></li>
+                <li><a id="view_district_med" class="view_data" href="#">District Median</a></li>
+                <li><a id="view_schools_avg" class="view_data" href="#">Displayed Schools Average</a></li>
+                <li><a id="view_schools_med" class="view_data" href="#">Displayed Schools Median</a></li>
+            </ul>
         </div>
     </div>
 </div>

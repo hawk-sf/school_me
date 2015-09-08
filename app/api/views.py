@@ -1,11 +1,13 @@
 from flask       import request, jsonify
 from .           import api
+from ..          import db
 from ..models    import School, District, GrowthAPI, BaseAPI
 from .forms      import BaseAPIForm, GrowthAPIForm, SchoolsForm
 from config      import SF_DISTRICT_CDS, MAPBOX_PK
 from math        import sin, cos, sqrt, atan2, radians
 from collections import defaultdict
-import requests as req
+import requests  as req
+import numpy     as np
 
 
 @api.route('/map_schools', methods=['GET'])
@@ -147,4 +149,50 @@ def search_growth_apis():
 def get_growth_api(_id):
     growth_api = GrowthAPI.query.filter_by(id = _id).first()
     result     = growth_api.as_dict() if growth_api else {}
+    return jsonify(result)
+
+
+@api.route('/stats/base_apis/<int:year>', methods=['GET'])
+def get_base_api_stats(year):
+    apis = db.session.query(BaseAPI).filter(BaseAPI.year == year)\
+           .join(School).join(District)\
+           .filter(District.cds_code == SF_DISTRICT_CDS).all()
+    base_apis = np.array([a.apib for a in apis if a.apib])
+    result    = {
+                 'mean':      np.mean(base_apis),
+                 'median':    np.median(base_apis),
+                 'std':       np.std(base_apis),
+                 'quantiles': {
+                               '25': np.percentile(base_apis, 25),
+                               '50': np.percentile(base_apis, 50),
+                               '75': np.percentile(base_apis, 75),
+                              },
+                 'histogram': {
+                               'values': list(np.histogram(base_apis)[0]),
+                               'bins':   list(np.histogram(base_apis)[1]),
+                              },
+                }
+    return jsonify(result)
+
+
+@api.route('/stats/growth_apis/<int:year>', methods=['GET'])
+def get_growth_api_stats(year):
+    apis = db.session.query(GrowthAPI).filter(GrowthAPI.year == year)\
+           .join(School).join(District)\
+           .filter(District.cds_code == SF_DISTRICT_CDS).all()
+    growth_apis = np.array([a.growth for a in apis if a.growth])
+    result      = {
+                   'mean':      np.mean(growth_apis),
+                   'median':    np.median(growth_apis),
+                   'std':       np.std(growth_apis),
+                   'quantiles': {
+                                 '25': np.percentile(growth_apis, 25),
+                                 '50': np.percentile(growth_apis, 50),
+                                 '75': np.percentile(growth_apis, 75),
+                                },
+                   'histogram': {
+                                 'values': list(np.histogram(growth_apis)[0]),
+                                 'bins':   list(np.histogram(growth_apis)[1]),
+                                },
+                  }
     return jsonify(result)

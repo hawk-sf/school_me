@@ -1,5 +1,71 @@
 L.mapbox.accessToken = 'pk.eyJ1IjoiaGF3ay1zZiIsImEiOiJlZWZiODAxYzA1M2NkOGMyNzc4MmU0MWVmYmIxZDNlMiJ9.xNP0mDW8M6tZ58ZOKRRjTw';
 
+function arrayMean(arr) {
+  var sum    = 0;
+  var length = arr.length;
+  for (var i = 0; i < arr.length; i++) {
+    sum += arr[i];
+  };
+
+  return sum / length;
+}
+
+function arrayMedian(arr) {
+    arr.sort(function(a,b) {return a - b;});
+
+    var half = Math.floor(arr.length / 2);
+    var median;
+    if(arr.length % 2) {
+        return arr[half];
+    } else {
+        return (arr[half-1] + arr[half]) / 2.0;
+    }
+}
+
+function degreeToRadian(deg) {
+   return deg * Math.PI / 180;
+}
+
+function radianToDegree(rad) {
+   return rad * 180 / Math.PI;
+}
+
+L.LatLng.prototype.getPointFromDistance = function(bearing, distance) {
+  // Reference: http://www.movable-type.co.uk/scripts/latlong.html
+  var distance = distance / 6373000;
+  var bearing  = degreeToRadian(bearing);
+
+  var lat1 = degreeToRadian(this.lat);
+  var lon1 = degreeToRadian(this.lng);
+  var lat2 = Math.asin(Math.sin(lat1) * Math.cos(distance) +
+                       Math.cos(lat1) * Math.sin(distance) * Math.cos(bearing));
+  var lon2 = lon1 + Math.atan2(Math.sin(bearing) * Math.sin(distance) *
+                               Math.cos(lat1),
+                               Math.cos(distance) - Math.sin(lat1) *
+                               Math.sin(lat2));
+
+  return new L.LatLng(radianToDegree(lat2), radianToDegree(lon2));
+}
+
+function getCornerCircleDistance(radius) {
+  return Math.sqrt(2 * Math.pow(radius, 2))
+}
+
+function getColor(val, max, min) {
+  if (val < 0) {
+    return '#000000';
+  };
+  if (min < 0) {
+    min = 0;
+  };
+  var binSize = Math.floor((max - min) / 5);
+  return val > max - binSize * 1 ? '#810F7C' :
+         val > max - binSize * 2 ? '#8856A7' :
+         val > max - binSize * 3 ? '#8C96C6' :
+         val > max - binSize * 4 ? '#B3CDE3' :
+                                   '#EDF8FB';
+}
+
 function getGeoJSONFeature(school) {
   var description = '<i>' + school.levelName + ', ' + school.gradeSpan + '</i><br>';
   description    += school.phone + '<br>';
@@ -28,50 +94,6 @@ function getGeoJSONFeature(school) {
   return geojson;
 }
 
-Number.prototype.toRad = function() {
-   return this * Math.PI / 180;
-}
-
-Number.prototype.toDeg = function() {
-   return this * 180 / Math.PI;
-}
-
-L.LatLng.prototype.destinationPoint = function(bearing, distance) {
-  // Reference: http://www.movable-type.co.uk/scripts/latlong.html
-  var distance = distance / 6373000;
-  var bearing  = bearing.toRad();
-
-  var lat1 = this.lat.toRad();
-  var lon1 = this.lng.toRad();
-  var lat2 = Math.asin(Math.sin(lat1) * Math.cos(distance) +
-                       Math.cos(lat1) * Math.sin(distance) * Math.cos(bearing));
-  var lon2 = lon1 + Math.atan2(Math.sin(bearing) * Math.sin(distance) *
-                               Math.cos(lat1),
-                               Math.cos(distance) - Math.sin(lat1) *
-                               Math.sin(lat2));
-
-  return new L.LatLng(lat2.toDeg(), lon2.toDeg());
-}
-
-function getCornerCircleDistance(radius) {
-  return Math.sqrt(2 * Math.pow(radius, 2))
-}
-
-function getColor(val, max, min) {
-  if (val < 0) {
-    return '#000000';
-  };
-  if (min < 0) {
-    min = 0;
-  };
-  var binSize = Math.floor((max - min) / 5);
-  return val > max - binSize * 1 ? '#810F7C' :
-         val > max - binSize * 2 ? '#8856A7' :
-         val > max - binSize * 3 ? '#8C96C6' :
-         val > max - binSize * 4 ? '#B3CDE3' :
-                                   '#EDF8FB';
-}
-
 $(window).on('load', function() {
   var map = L.mapbox.map('map',
                          'hawk-sf.n7kjj3ke',
@@ -87,7 +109,7 @@ $(window).on('load', function() {
   var bounds        = map.getBounds();
   var swLatLng      = bounds.getSouthWest();
   var cornerCircle  = L.circle(
-                               swLatLng.destinationPoint(45, getCornerCircleDistance(0 + cornerPadding)),
+                               swLatLng.getPointFromDistance(45, getCornerCircleDistance(0 + cornerPadding)),
                                0,
                                {
                                 color:       'purple',
@@ -107,7 +129,7 @@ $(window).on('load', function() {
                          iconAnchor: [24, 12],
                          id:         'cornerLabel'
                         });
-  var coordinates = swLatLng.destinationPoint(45, getCornerCircleDistance(1000 + cornerPadding));
+  var coordinates = swLatLng.getPointFromDistance(45, getCornerCircleDistance(1000 + cornerPadding));
   var cornerLabel = L.marker(coordinates,
                        {
                         icon: icon,
@@ -156,12 +178,14 @@ $(window).on('load', function() {
       });
       var dataRange = updateDataCircles();
       updateDataLabels();
+      updateDataInfo('Base API', year);
 
       $.ajax({
         type:  'GET',
         url:   '/api/base_apis/38684780000000_' + year,
       }).success(function(api) {
         updateCornerCircle(api.apib, dataRange[0], dataRange[1]);
+        $('button#corner_choice').find('span#choice').text('District Average');
       });
     });
   }
@@ -197,12 +221,14 @@ $(window).on('load', function() {
       });
       var dataRange = updateDataCircles();
       updateDataLabels();
+      updateDataInfo('Growth API', year);
 
       $.ajax({
         type:  'GET',
         url:   '/api/growth_apis/38684780000000_' + year,
       }).success(function(api) {
         updateCornerCircle(api.growth, dataRange[0], dataRange[1]);
+        $('button#corner_choice').find('span#choice').text('District Average');
       });
     });
   }
@@ -335,7 +361,13 @@ $(window).on('load', function() {
     });
   }
 
-  function updateCornerCircle(circleArea) {
+  function updateDataInfo(dataType, dataYear) {
+    $('li#viewed_data_type').find('strong').text(dataType);
+    $('li#viewed_data_year').text(dataYear);
+    $('div#viewed_data_info').show();
+  }
+
+  function updateCornerCircle(circleArea, maxData, minData) {
     var scaler    = getCircleScaler();
     var radius    = Math.sqrt(Math.abs(circleArea * scaler) * 1000/Math.PI);
     distances     = getPixelDistance();
@@ -350,9 +382,9 @@ $(window).on('load', function() {
                            id:          'cornerCircle'
                           });
     cornerCircle.setRadius(radius);
-    cornerCircle.setLatLng(swLatLng.destinationPoint(45, getCornerCircleDistance(radius + cornerPadding)))
+    cornerCircle.setLatLng(swLatLng.getPointFromDistance(45, getCornerCircleDistance(radius + cornerPadding)))
 
-    cornerLabel.setLatLng(swLatLng.destinationPoint(45, getCornerCircleDistance(radius + cornerPadding)));
+    cornerLabel.setLatLng(swLatLng.getPointFromDistance(45, getCornerCircleDistance(radius + cornerPadding)));
 
     if (radius > 0) {
       var icon = L.divIcon({
@@ -366,7 +398,10 @@ $(window).on('load', function() {
 
       var radiusPixels = 2 * radius / distances[0];
       var divPadding   = 10 + radiusPixels;
-      $('div.corner').css({'padding-bottom': divPadding + 'px'});
+      $('div.corner').css({
+                           'padding-bottom': divPadding + 'px',
+                           'padding-left':   divPadding/2 + 'px',
+                          });
       $('div.corner').show();
     };
   }
@@ -385,6 +420,45 @@ $(window).on('load', function() {
     var distanceY    = latLngCenter.distanceTo(latLngY);
     var distanceDiag = latLngCenter.distanceTo(latLngDiag);
     return [distanceX, distanceY, distanceDiag]
+  }
+
+  function getCircleAreas() {
+    var geojson   = schoolLayer.getGeoJSON();
+    var dataArray = [];
+    $.each(geojson.features, function(n, feature) {
+      dataArray.push(feature.properties.circleArea);
+    });
+
+    return dataArray;
+  }
+
+  function getStats(recordType, year, statType) {
+    console.log(recordType, year, statType)
+    $.ajax({
+      type: 'GET',
+      url:  '/api/stats/' + recordType + '/' + year,
+    }).success(function(stats) {
+      var dataArray = getCircleAreas();
+      var maxData   = Math.max.apply(null, dataArray);
+      var minData   = Math.min.apply(null, dataArray);
+      updateCornerCircle(Math.floor(stats[statType]), maxData, minData);
+    });
+  }
+
+  function getSchoolsMean() {
+    var dataArray = getCircleAreas();
+    var mean      = arrayMean(dataArray);
+    var maxData   = Math.max.apply(null, dataArray);
+    var minData   = Math.min.apply(null, dataArray);
+    updateCornerCircle(Math.floor(mean), maxData, minData); 
+  }
+
+  function getSchoolsMedian() {
+    var dataArray = getCircleAreas();
+    var median    = arrayMedian(dataArray);
+    var maxData   = Math.max.apply(null, dataArray);
+    var minData   = Math.min.apply(null, dataArray);
+    updateCornerCircle(Math.floor(median), maxData, minData); 
   }
 
   $('#address_modal').modal('show');
@@ -469,14 +543,48 @@ $(window).on('load', function() {
     $('button.view_data').prop('disabled', false);
   });
 
-  $('select#growth_api_year').click(function (e) {
-    e.stopPropagation();
+  $('body').on('click','a#view_district_avg', function(e) {
+    $('.view_data').prop('disabled', true);
+    var recordTypeMapper = {
+                            'Base API':   'base_apis',
+                            'Growth API': 'growth_apis',
+                           }
+    var record = $('li#viewed_data_type').find('strong').text();
+    var year   = $('li#viewed_data_year').text();
+    getStats(recordTypeMapper[record], year, 'mean');
+    $('button#corner_choice').find('span#choice').text('District Average');
+    $('.view_data').prop('disabled', false);
   });
 
-  $('body').on('click', 'button#clear_button', function() {
-    circleLayer.clearLayers();
-    $('div.dataLabel').remove();
-    labelLayer.clearLayers();
+  $('body').on('click','a#view_district_med', function(e) {
+    $('.view_data').prop('disabled', true);
+    var recordTypeMapper = {
+                            'Base API':   'base_apis',
+                            'Growth API': 'growth_apis',
+                           }
+    var record = $('li#viewed_data_type').find('strong').text();
+    var year   = $('li#viewed_data_year').text();
+    getStats(recordTypeMapper[record], year, 'median');
+    $('button#corner_choice').find('span#choice').text('District Median');
+    $('.view_data').prop('disabled', false);
+  });
+
+  $('body').on('click','a#view_schools_avg', function(e) {
+    $('.view_data').prop('disabled', true);
+    getSchoolsMean();
+    $('button#corner_choice').find('span#choice').text('Displayed Schools Average');
+    $('.view_data').prop('disabled', false);
+  });
+
+  $('body').on('click','a#view_schools_med', function(e) {
+    $('.view_data').prop('disabled', true);
+    getSchoolsMedian();
+    $('button#corner_choice').find('span#choice').text('Displayed Schools Median');
+    $('.view_data').prop('disabled', false);
+  });
+
+  $('select#growth_api_year').click(function (e) {
+    e.stopPropagation();
   });
 
   $('body').on('click', 'button#log_button', function() {
@@ -495,7 +603,12 @@ $(window).on('load', function() {
     var radius = cornerCircle.getRadius();
     var scaler = getCircleScaler();
     var area   = (Math.PI * Math.pow(radius, 2)) / scaler / 1000;
-    updateCornerCircle(Math.floor(area));
+
+    var dataArray = getCircleAreas();
+    var maxData   = Math.max.apply(null, dataArray);
+    var minData   = Math.min.apply(null, dataArray);
+
+    updateCornerCircle(Math.floor(area), maxData, minData);
   });
 })
 
