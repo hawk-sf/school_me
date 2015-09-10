@@ -7,6 +7,7 @@ class SchoolsForm(Form):
     education_level_code = SelectMultipleField(u'Education Level', validators=[Required()])
     street               = StringField(u'Street', validators=[])
     zip_code             = StringField(u'Zip (required)', validators=[Required()])
+    number_of_results    = SelectField(u'Number of Schools')
 
 
 class BaseAPIForm(Form):

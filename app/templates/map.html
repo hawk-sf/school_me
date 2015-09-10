@@ -7,10 +7,31 @@
 
 
 <div class='overlay'>
-    <div class="panel panel-info">
-        <div class="panel-heading">School Options</div>
-        <div class="panel-body">
-          Some choices about the schools
+    <div class="panel-group" id="accordion">
+        <div class="panel panel-info">
+             <div class="panel-heading">
+                <h1 class="panel-title">
+                    <a class="accordian-toggle collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapse_address_update">Schools</a>
+                </h1>
+            </div>
+            <div id="collapse_address_update" class="panel-collapse collapse">
+                <div class="panel-body">
+                    <form id="address_update_form" role="form">
+                        {{ render_field(address_form.street, id='street_update') }}
+                        {{ render_field(address_form.zip_code, id='zip_code_update') }}
+                        {{ render_field(address_form.education_level_code,
+                                        id='education_level_code_update') }}
+                        {{ render_field(address_form.number_of_results, id='number_of_results_update') }}
+                        <button type="submit" value="Submit"  class="btn btn-primary" id="submit_address_update">Submit</button>
+                    </form>
+                    <div id="address_update_error_box" class="col-lg-12 col-md-12" style="display:none">
+                        <div class="alert alert-warning" role="alert">
+                            <ul id="address_update_errors">
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -19,7 +40,7 @@
             <ul class="list-inline">
                 <li id="viewed_data_type"><strong>...</strong></li>
                 <li id="viewed_data_year">...</li>
-            </el>
+            </ul>
         </div>
     </div>
 
@@ -89,12 +110,11 @@
                 <p>
                     Let's find some schools close to your home.
                 </p>
-                {{ render_field(address_form.street, size='20') }}
-                {{ render_field(address_form.zip_code, size='5') }}
+                {{ render_field(address_form.street) }}
+                {{ render_field(address_form.zip_code) }}
                 {{ render_field(address_form.education_level_code) }}
                 <div id="address_error_box" class="col-lg-12 col-md-12" style="display:none">
                     <div class="alert alert-warning" role="alert">
-                        <button type="button" class="close" data-hide="alert">&times;</button>
                         <ul id="address_errors">
                         </ul>
                     </div>

@@ -99,6 +99,7 @@ $(window).on('load', function() {
                          'hawk-sf.n7kjj3ke',
                          {zoomControl: false}).setView([37.742, -122.445], 13);
   new L.Control.Zoom({ position: 'topright' }).addTo(map);
+  var homeLayer   = L.mapbox.featureLayer().addTo(map);
   var schoolLayer = L.mapbox.featureLayer().addTo(map);
   var circleLayer = L.layerGroup().addTo(map);
 
@@ -244,39 +245,79 @@ $(window).on('load', function() {
       pair    = '&education_level_code=' + $(sel).val();
       levels += pair;
     });
-    var dataString = ('street='    + street +
-                      '&zip_code=' + zipCode +
+    var dataString = ('street='             + street +
+                      '&zip_code='          + zipCode +
+                      '&number_of_results=' + '25' +
                       levels);
     $.ajax({
       type: 'GET',
       url:  '/api/map_schools',
       data: dataString
     }).success(function(results) {
-      $.each(codes, function(n, sel) {
-        var level       = $(sel).val();
-        var featureList = [];
-        var geojson;
-        $.each(results[level], function(n, feature) {
-          geojson = getGeoJSONFeature(feature);
-          featureList.push(geojson);
-        });
-        schoolLayer.setGeoJSON({
-          "type":     "FeatureCollection",
-          "features": featureList
-        });
-        map.fitBounds(schoolLayer.getBounds());
-      });
-      var homeLayer   = L.mapbox.featureLayer().addTo(map);
-      var homeGeojson = results['home'];
-      homeGeojson.properties['title']         = 'Home';
-      homeGeojson.properties['description']   = homeGeojson.place_name;
-      homeGeojson.properties['marker-color']  = '#a3e46b';
-      homeGeojson.properties['marker-symbol'] = 'star-stroked';
-      homeLayer.setGeoJSON(homeGeojson);
+      initLayers(codes, results);
       initDataCircles();
       $('#address_modal').modal('hide');
       $('button#submit_address').prop('disabled', false);
+      $("form#address_update_form input#zip_code_update").val(zipCode);
+      $("form#address_update_form input#street_update").val(street);
     });
+  }
+
+  function updateMapSchools() {
+    $('button#submit_address_update').prop('disabled', true);
+    var zipCode = $("form#address_update_form input#zip_code_update").val();
+    var street  = $("form#address_update_form input#street_update").val();
+    var limit   = $("form#address_update_form select#number_of_results_update").val();
+    var codes   = $("form#address_update_form select#education_level_code_update :selected");
+    var levels  = '';
+    var pair    = '';
+    $.each(codes, function(n, sel) {
+      pair    = '&education_level_code=' + $(sel).val();
+      levels += pair;
+    });
+    var dataString = ('street='             + street +
+                      '&zip_code='          + zipCode +
+                      '&number_of_results=' + limit +
+                      levels);
+    $.ajax({
+      type: 'GET',
+      url:  '/api/map_schools',
+      data: dataString
+    }).success(function(results) {
+      schoolLayer.clearLayers();
+      circleLayer.clearLayers();
+      homeLayer.clearLayers();
+      initLayers(codes, results);
+      initDataCircles();
+      $('button#submit_address_update').prop('disabled', false);
+      $('a.accordian-toggle').trigger('click');
+      $('div#viewed_data_info').hide();
+      $('div.corner').hide();
+      updateCornerCircle(0,0,0);
+    });
+  }
+
+  function initLayers(codes, results) {
+    var featureList = [];
+    $.each(codes, function(n, sel) {
+      var level       = $(sel).val();
+      var geojson;
+      $.each(results[level], function(n, feature) {
+        geojson = getGeoJSONFeature(feature);
+        featureList.push(geojson);
+      });
+    });
+    schoolLayer.setGeoJSON({
+        "type":     "FeatureCollection",
+        "features": featureList
+      });
+    map.fitBounds(schoolLayer.getBounds());
+    var homeGeojson = results['home'];
+    homeGeojson.properties['title']         = 'Home';
+    homeGeojson.properties['description']   = homeGeojson.place_name;
+    homeGeojson.properties['marker-color']  = '#a3e46b';
+    homeGeojson.properties['marker-symbol'] = 'star-stroked';
+    homeLayer.setGeoJSON(homeGeojson);
   }
 
   function initDataCircles() {
@@ -506,6 +547,36 @@ $(window).on('load', function() {
     wrapper: "li",
     submitHandler: function(form) {
       getMapSchools();
+    }
+  });
+
+  $('form#address_update_form').validate({
+    rules: {
+      zip_code: {
+        required: true,
+        zipCode:  true
+      },
+      street: {
+        required: false
+      },
+      education_level_code: {
+        required: true,
+      },
+      number_of_results: {
+        required: false
+      }
+    },
+    highlight: function(element) {
+      $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
+    },
+    unhighlight: function(element) {
+      $(element).closest('.form-group').removeClass('has-error').addClass('has-success');
+    },
+    errorContainer: "#address_update_error_box",
+    errorLabelContainer: "#address_update_error_box ul",
+    wrapper: "li",
+    submitHandler: function(form) {
+      updateMapSchools();
     }
   });
 

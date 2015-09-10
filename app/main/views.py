@@ -22,6 +22,7 @@ def map():
 
     address_form = AddressForm()
     levels       = get_education_levels(sf_schools)
+    address_form.number_of_results.choices    = [(25, 25), (50, 50), ('', 'All')]
     address_form.education_level_code.choices = sorted([(l['code'], l['name']) for l in levels],
                                                        key = lambda l: l[0])
 

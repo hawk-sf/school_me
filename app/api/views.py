@@ -13,6 +13,7 @@ import numpy     as np
 @api.route('/map_schools', methods=['GET'])
 def map_schools():
     form      = SchoolsForm(request.args)
+    limit     = form.number_of_results.data if form.number_of_results.data else None
     levels    = form.education_level_code.data
     street    = form.street.data   if form.street.data   else ''
     zip_code  = form.zip_code.data if form.zip_code.data else ''
@@ -43,10 +44,15 @@ def map_schools():
              'levelName': school.education_instruction_level.name
             }
         results[school.education_instruction_level.code].append(d)
+    try:
+        limit = int(limit)
+    except Exception:
+        limit = None
     for key in results.iterkeys():
         results[key].sort(key = lambda d: d['distance'])
         results[key] = [s for s in results[key] if s['distance']]
-        results[key] = results[key][0:20]
+        if limit:
+            results[key] = results[key][0:limit]
     results['home']  = home
     return jsonify(results)
 
