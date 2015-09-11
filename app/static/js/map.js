@@ -260,6 +260,12 @@ $(window).on('load', function() {
       $('button#submit_address').prop('disabled', false);
       $("form#address_update_form input#zip_code_update").val(zipCode);
       $("form#address_update_form input#street_update").val(street);
+      var options = $("form#address_form select#education_level_code :selected")
+                    .map(function(){ return this.value }).get();
+      $.each(options, function(n, val) {
+        $("form#address_update_form select#education_level_code_update option[value="+ val + "]").prop('selected', true)
+      });
+      $('button#api_button').trigger('click');
     });
   }
 
@@ -289,6 +295,8 @@ $(window).on('load', function() {
       homeLayer.clearLayers();
       initLayers(codes, results);
       initDataCircles();
+      $('button.view_data.btn-info').addClass('btn-default');
+      $('button.view_data').removeClass('btn-info');
       $('button#submit_address_update').prop('disabled', false);
       $('a.accordian-toggle').trigger('click');
       $('div#viewed_data_info').hide();
@@ -594,6 +602,13 @@ $(window).on('load', function() {
     e.stopPropagation();
   });
 
+  $('body').on('click', 'button.view_data', function(e) {
+    $('button.view_data.btn-info').addClass('btn-default');
+    $('button.view_data').removeClass('btn-info');
+    $(this).removeClass('btn-default');
+    $(this).addClass('btn-info');
+  });
+
   $('body').on('click','button#view_base_api', function(e) {
     e.stopPropagation();
     $('button.view_data').prop('disabled', true);
@@ -659,16 +674,9 @@ $(window).on('load', function() {
     e.stopPropagation();
   });
 
-  $('body').on('click', 'button#log_button', function() {
-    var geojson = schoolLayer.getGeoJSON();
-    console.log("Features");
-    schoolLayer.eachLayer(function(layer){
-      console.log(layer)
-    })
-    console.log("Circles")
-    circleLayer.eachLayer(function(layer){
-      console.log(layer);
-    });
+  $('body').on('click','span.get_more_info', function(e) {
+    e.stopPropagation();
+    $('#explanation_modal').modal('show');
   });
 
   map.on('move', function() {

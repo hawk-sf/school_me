@@ -35,13 +35,12 @@
         </div>
     </div>
 
-    <div id="viewed_data_info" class="panel panel-default" style="display:none;">
-        <div class="panel-body">
-            <ul class="list-inline">
-                <li id="viewed_data_type"><strong>...</strong></li>
-                <li id="viewed_data_year">...</li>
-            </ul>
-        </div>
+    <div id="viewed_data_info" class="circle_info" style="display:none;">
+        <ul class="list-inline no_margin">
+            <li><span class="glyphicon glyphicon-eye-open"></li>
+            <li id="viewed_data_type"></span><strong>...</strong></li>
+            <li id="viewed_data_year">...</li>
+        </ul>
     </div>
 
     <div class="btn-group-vertical" role="group" aria-label="...">
@@ -62,22 +61,34 @@
                 <div id="base_api_year_select" style="display:none; padding:10px">
                     <form class="form-inline">
                         <div class="input-group">
-                            {{ render_field(base_api_form.year, class="form-control", label_visible=false, id='base_api_year') }}
+                            {{ render_field(base_api_form.year,
+                                            class="form-control",
+                                            label_visible=false,
+                                            id='base_api_year') }}
                         </div>
                         <button id="view_base_api" class="btn btn-default view_data" type="button">
                             <span class="glyphicon glyphicon-eye-open"></span>
                         </button>
+                        <span class="get_more_info">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                        </span>
                     </form>
                 </div>
                 <li><a id="growth_api_year_options" href="#">Growth</a></li>
                 <div id="growth_api_year_select" style="display:none; padding:10px">
                     <form class="form-inline">
                         <div class="input-group">
-                            {{ render_field(growth_api_form.year, class="form-control", label_visible=false, id='growth_api_year') }}
+                            {{ render_field(growth_api_form.year,
+                                            class="form-control",
+                                            label_visible=false,
+                                            id='growth_api_year') }}
                         </div>
                         <button id="view_growth_api" class="btn btn-default view_data" type="button">
                             <span class="glyphicon glyphicon-eye-open"></span>
                         </button>
+                        <span class="get_more_info">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                        </span>
                     </form>  
                 </div>
             </ul>
@@ -102,14 +113,12 @@
     </div>
 </div>
 
-<div id="address_modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+<div id="address_modal" class="modal fade" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
         <form id="address_form" role="form">
             <div class="modal-body">
-                <p>
-                    Let's find some schools close to your home.
-                </p>
+                <h4>Let's find some schools close to your home.</h4>
                 {{ render_field(address_form.street) }}
                 {{ render_field(address_form.zip_code) }}
                 {{ render_field(address_form.education_level_code) }}
@@ -121,10 +130,43 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 <button type="submit" value="Submit"  class="btn btn-primary" id="submit_address">Submit</button>
             </div>
         </form>
+        </div>
+    </div>
+</div>
+
+<div id="explanation_modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h3>Academic Performance Index (API)</h3>
+                
+            </div>
+            <div class="modal-body">
+                <p>
+                    From the California Department of Education:
+                </p>
+                <blockquote>
+                    <p>
+                        The cornerstone of California's Public Schools Accountability Act of 1999; measures the academic performance and growth of schools on a variety of academic measures.
+                    </p>
+                    <footer>http://www.cde.ca.gov/ta/ac/ap/ <cite title="Source Title">Academic Performance Index (API) (CA Dept of Education)</cite></footer>
+                </blockquote>
+                <h3>Based on test results from:</h3>
+                <ul>
+                    <li>Standardized Testing and Reporting (STAR) Program</li>
+                    <li>California High School Exit Examination (CAHSEE)</li>
+                    <li>California Alternate Performance Assessment (CAPA)</li>
+                </ul>
+                <h3>Resources:</h3>
+                <ul>
+                    <li><a href="http://www.cde.ca.gov/ta/ac/ap/">Academic Performance Index (API) (CA Dept of Education)</a></li>
+                    <li><a href="http://www.cde.ca.gov/ta/ac/ap/apidatafiles.asp">API Data Files - Academic Performance Index (CA Dept of Education)</a></li>
+                </ul> 
+            </div>
         </div>
     </div>
 </div>
