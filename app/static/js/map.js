@@ -1,5 +1,3 @@
-L.mapbox.accessToken = 'pk.eyJ1IjoiaGF3ay1zZiIsImEiOiJlZWZiODAxYzA1M2NkOGMyNzc4MmU0MWVmYmIxZDNlMiJ9.xNP0mDW8M6tZ58ZOKRRjTw';
-
 function arrayMean(arr) {
   var sum    = 0;
   var length = arr.length;
@@ -70,8 +68,7 @@ function getGeoJSONFeature(school) {
   var description = '<i>' + school.levelName + ', ' + school.gradeSpan + '</i><br>';
   description    += school.phone + '<br>';
   description    += school.address + '<br>';
-  description    += school.zipCode + '<br>';
-  description    += school.website;
+  description    += school.zipCode;
   var geojson = {
                  type: 'Feature',
                  geometry: {
@@ -95,6 +92,8 @@ function getGeoJSONFeature(school) {
 }
 
 $(window).on('load', function() {
+  L.mapbox.accessToken = $('meta[name=mapbox-access-token]').attr('content');
+
   var map = L.mapbox.map('map',
                          'hawk-sf.n7kjj3ke',
                          {zoomControl: false}).setView([37.742, -122.445], 13);

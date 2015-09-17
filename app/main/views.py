@@ -6,7 +6,7 @@ from ..          import db
 from ..models    import School, BaseAPI, GrowthAPI
 from .forms      import AddressForm
 from ..api.forms import BaseAPIForm, GrowthAPIForm
-from config      import SF_DISTRICT_CDS
+from config      import SF_DISTRICT_CDS, MAPBOX_PK
 
 
 def get_education_levels(schools):
@@ -36,6 +36,7 @@ def map():
 
     return render_template('map.html',
                            map             = True,
+                           mapbox_api_key  = MAPBOX_PK,
                            address_form    = address_form,
                            base_api_form   = base_api_form,
                            growth_api_form = growth_api_form)
