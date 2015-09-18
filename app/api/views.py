@@ -2,7 +2,7 @@ from flask       import request, jsonify
 from .           import api
 from ..          import db
 from ..models    import School, District, GrowthAPI, BaseAPI
-from .forms      import BaseAPIForm, GrowthAPIForm, SchoolsForm
+from .forms      import BaseAPIForm, GrowthAPIForm, SchoolsForm, CommmuteForm
 from config      import SF_DISTRICT_CDS, MAPBOX_PK
 from math        import sin, cos, sqrt, atan2, radians
 from collections import defaultdict
@@ -104,6 +104,18 @@ def district(cds_code):
     district = District.query.filter_by(cds_code = cds_code).first()
     result   = district.as_dict(ensure_strings = True) if district else None
     return jsonify(result)
+
+
+@api.route('/commute', methods=['GET'])
+def commute_address():
+    form      = CommmuteForm(request.args)
+    street    = form.street.data   if form.street.data   else ''
+    zip_code  = form.zip_code.data if form.zip_code.data else ''
+    address   = ' '.join([street, zip_code])
+    work      = geocode_address(address)
+    results   = defaultdict(lambda: [])
+    results['work'] = work
+    return jsonify(results)
 
 
 @api.route('/base_apis', methods=['GET'])

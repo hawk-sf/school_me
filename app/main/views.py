@@ -4,7 +4,7 @@ from flask       import render_template, send_from_directory
 from .           import main
 from ..          import db
 from ..models    import School, BaseAPI, GrowthAPI
-from .forms      import AddressForm
+from .forms      import AddressForm, CommmuteForm
 from ..api.forms import BaseAPIForm, GrowthAPIForm
 from config      import SF_DISTRICT_CDS, MAPBOX_PK
 
@@ -26,6 +26,8 @@ def map():
     address_form.education_level_code.choices = sorted([(l['code'], l['name']) for l in levels],
                                                        key = lambda l: l[0])
 
+    commute_form = CommmuteForm()
+
     base_api_form = BaseAPIForm()
     years         = (db.session.query(BaseAPI.year).distinct().all())
     base_api_form.year.choices = sorted([(y[0], y[0]) for y in years], reverse = True)
@@ -38,6 +40,7 @@ def map():
                            map             = True,
                            mapbox_api_key  = MAPBOX_PK,
                            address_form    = address_form,
+                           commute_form    = commute_form,
                            base_api_form   = base_api_form,
                            growth_api_form = growth_api_form)
 

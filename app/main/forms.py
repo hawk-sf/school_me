@@ -8,3 +8,8 @@ class AddressForm(Form):
     street               = StringField(u'Street', validators=[])
     zip_code             = IntegerField(u'Zip Code*', validators=[Required(), Length(min=5, max=5)])
     number_of_results    = SelectField(u'Number of Schools')
+
+
+class CommmuteForm(Form):
+    street               = StringField(u'Street', validators=[])
+    zip_code             = StringField(u'Zip (required)', validators=[Required()])

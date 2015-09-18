@@ -99,8 +99,10 @@ $(window).on('load', function() {
                          {zoomControl: false}).setView([37.742, -122.445], 13);
   new L.Control.Zoom({ position: 'topright' }).addTo(map);
   var homeLayer   = L.mapbox.featureLayer().addTo(map);
+  var workLayer   = L.mapbox.featureLayer().addTo(map);
   var schoolLayer = L.mapbox.featureLayer().addTo(map);
   var circleLayer = L.layerGroup().addTo(map);
+  var workCircle  = L.circle();
 
   var maxData       = 0;
   var minData       = 0;
@@ -112,8 +114,8 @@ $(window).on('load', function() {
                                swLatLng.getPointFromDistance(45, getCornerCircleDistance(0 + cornerPadding)),
                                0,
                                {
-                                color:       'purple',
-                                weight:      .5,
+                                color:       '#ffffff',
+                                weight:      1,
                                 fillColor:   '#c091e6',
                                 fillOpacity: 0,
                                 id:          'cornerCircle'
@@ -304,6 +306,71 @@ $(window).on('load', function() {
     });
   }
 
+  function setCommuteRadius() {
+    var zipCode   = $("form#commute_form input#zip_code").val();
+    var street    = $("form#commute_form input#street").val();
+    var dataString = 'street=' + street + '&zip_code=' + zipCode;
+
+    $.ajax({
+      type: 'GET',
+      url:  '/api/commute',
+      data: dataString
+    }).success(function(results) {
+      var workGeojson = results['work'];
+      workGeojson.properties['title']         = 'Work';
+      workGeojson.properties['description']   = workGeojson.place_name;
+      workGeojson.properties['marker-color']  = '#a3e46b';
+      workGeojson.properties['marker-symbol'] = 'car';
+      workLayer.setGeoJSON(workGeojson);
+      var allMarkers = []
+      $.each([workLayer, homeLayer, schoolLayer], function(idx, layer) {
+         layer.eachLayer(function(marker){
+           allMarkers.push(marker);
+         });
+      });
+      var totalGroup = L.featureGroup(allMarkers);
+      map.fitBounds(totalGroup.getBounds());
+
+      var home   = homeLayer.getLayers()[0];
+      var radius = getCommuteCircleRadius();
+      workCircle.setLatLng(home.getLatLng())
+      workCircle.setRadius(radius);
+      workCircle.setStyle({
+                           color:       '#a3e46b',
+                           weight:      8,
+                           fillOpacity: 0,
+                           id:          'commuteCircle'
+                          });
+      workCircle.addTo(map);
+      $('button#view_commute').prop('disabled', false);
+      $('button#view_commute').removeClass('btn-default');
+      $('button#view_commute').addClass('btn-info');
+    });
+  }
+
+  function toggleCommuteCircle() {
+    var radius = workCircle.getRadius();
+    if (radius > 0) {
+      radius = 0;
+      $('button#view_commute').addClass('btn-default');
+      $('button#view_commute').removeClass('btn-info');
+    } else {
+      radius = getCommuteCircleRadius();
+      $('button#view_commute').removeClass('btn-default');
+      $('button#view_commute').addClass('btn-info');
+    };
+    workCircle.setRadius(radius)
+  }
+
+  function getCommuteCircleRadius() {
+    var home       = homeLayer.getLayers()[0];
+    var work       = workLayer.getLayers()[0];
+    var homeLatLng = home.getLatLng();
+    var workLatLng = work.getLatLng();
+    var radius     = homeLatLng.distanceTo(workLatLng);
+    return radius;
+  }
+
   function initLayers(codes, results) {
     var featureList = [];
     $.each(codes, function(n, sel) {
@@ -336,8 +403,8 @@ $(window).on('load', function() {
                               feature.geometry.coordinates.reverse(),
                               radius,
                               {
-                               color:       'white',
-                               weight:      .5,
+                               color:       '#ffffff',
+                               weight:      .1,
                                fillColor:   '#c091e6',
                                fillOpacity: 0.75,
                                id:          feature.properties.cdsCode
@@ -369,8 +436,8 @@ $(window).on('load', function() {
       var radius  = Math.sqrt(Math.abs(data * scaler) * 1000/Math.PI);
       circle.setRadius(radius);
       circle.setStyle({
-                       color:       'white',
-                       weight:      .5,
+                       color:       '#ffffff',
+                       weight:      1,
                        fillColor:   getColor(data, maxData, minData),
                        fillOpacity: 0.75,
                        id:          feature.properties.cdsCode
@@ -587,6 +654,39 @@ $(window).on('load', function() {
     }
   });
 
+  $('form#commute_form').validate({
+    rules: {
+      zip_code: {
+        required: true,
+        zipCode:  true
+      },
+      street: {
+        required: true
+      }
+    },
+    highlight: function(element) {
+      $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
+    },
+    unhighlight: function(element) {
+      $(element).closest('.form-group').removeClass('has-error').addClass('has-success');
+    },
+    errorContainer: "#commute_update_error_box",
+    errorLabelContainer: "#commute_update_error_box ul",
+    wrapper: "li",
+    submitHandler: function(form) {
+      setCommuteRadius();
+    }
+  });
+
+  $('body').on('click', 'button#submit_commute', function(e) {
+    e.stopPropagation();
+  });
+
+  $('body').on('click', 'button#view_commute', function(e) {
+    e.stopPropagation();
+    toggleCommuteCircle();
+  });
+
   $('body').on('click', 'button#api_button', function(e) {
     $('div#base_api_year_select').show();
     $('div#growth_api_year_select').show();
@@ -606,6 +706,11 @@ $(window).on('load', function() {
     $('button.view_data').removeClass('btn-info');
     $(this).removeClass('btn-default');
     $(this).addClass('btn-info');
+  });
+
+  $('body').on('change', 'select.change_data', function(e) {
+    $('button.view_data.btn-info').addClass('btn-default');
+    $('button.view_data').removeClass('btn-info');
   });
 
   $('body').on('click','button#view_base_api', function(e) {

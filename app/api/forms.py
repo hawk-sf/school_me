@@ -10,6 +10,11 @@ class SchoolsForm(Form):
     number_of_results    = SelectField(u'Number of Schools')
 
 
+class CommmuteForm(Form):
+    street               = StringField(u'Street', validators=[])
+    zip_code             = StringField(u'Zip (required)', validators=[Required()])
+
+
 class BaseAPIForm(Form):
     cds_codes = SelectMultipleField(u'CDS Codes', validators=[Required()])
     year      = SelectField(u'Year', validators=[Required()])

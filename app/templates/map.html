@@ -44,9 +44,33 @@
     </div>
 
     <div class="btn-group-vertical" role="group" aria-label="...">
-        <button id="clear_button" type="button" class="btn btn-block btn-default" disabled="true">
-            Directions
-        </button>
+        <div class="btn-group" role="group">
+            <button id="commute_button" type="button" class="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Commute
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+                <div style="padding:10px">
+                    <form id="commute_form" role="form">
+                        {{ render_field(commute_form.street) }}
+                        {{ render_field(commute_form.zip_code) }}
+                        <div id="commute_error_box" class="col-lg-12 col-md-12" style="display:none">
+                            <div class="alert alert-warning" role="alert">
+                                <ul id="commute_errors">
+                                </ul>
+                            </div>
+                        </div>
+                        <button type="submit" value="Submit"  class="btn btn-primary" id="submit_commute">
+                            Submit
+                        </button>
+                        <button id="view_commute" class="btn btn-default" type="button" disabled="true">
+                            <span class="glyphicon glyphicon-eye-open"></span>
+                        </button>
+                    </form>
+                </div>
+                <li><a id="commute_options" href="#">Filter on Radius</a></li>
+            </ul>
+        </div>
 
         <div class="btn-group" role="group">
             <button id="demographics_button" type="button" class="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" disabled="true">
@@ -66,7 +90,7 @@
                     <form class="form-inline">
                         <div class="input-group">
                             {{ render_field(base_api_form.year,
-                                            class="form-control",
+                                            class="form-control change_data",
                                             label_visible=false,
                                             id='base_api_year') }}
                         </div>
@@ -83,7 +107,7 @@
                     <form class="form-inline">
                         <div class="input-group">
                             {{ render_field(growth_api_form.year,
-                                            class="form-control",
+                                            class="form-control change_data",
                                             label_visible=false,
                                             id='growth_api_year') }}
                         </div>
