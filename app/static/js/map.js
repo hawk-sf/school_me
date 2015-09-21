@@ -45,6 +45,10 @@ L.LatLng.prototype.getPointFromDistance = function(bearing, distance) {
   return new L.LatLng(radianToDegree(lat2), radianToDegree(lon2));
 }
 
+L.Circle.prototype.contains = function(latLng) {
+  return this.getLatLng().distanceTo(latLng) < this.getRadius();
+}
+
 function getCornerCircleDistance(radius) {
   return Math.sqrt(2 * Math.pow(radius, 2))
 }
@@ -84,8 +88,10 @@ function getGeoJSONFeature(school) {
                               cdsCode:         school.cdsCode,
                               'marker-color':  '#1087bf',
                               'marker-symbol': school.levelCode[0].toLowerCase(),
+                              levelCode:       school.levelCode[0].toLowerCase(),
                               circleArea:      0,
-                              dataLabel:       ''
+                              dataLabel:       '',
+                              filtered:        false
                               }
                 };
   return geojson;
@@ -336,7 +342,7 @@ $(window).on('load', function() {
       workCircle.setLatLng(home.getLatLng())
       workCircle.setRadius(radius);
       workCircle.setStyle({
-                           color:       '#a3e46b',
+                           color:       '#7ec9b1',
                            weight:      8,
                            fillOpacity: 0,
                            id:          'commuteCircle'
@@ -345,6 +351,8 @@ $(window).on('load', function() {
       $('button#view_commute').prop('disabled', false);
       $('button#view_commute').removeClass('btn-default');
       $('button#view_commute').addClass('btn-info');
+      $('li#filter_commute_li').show();
+      $('li#filter_seperator').show();
     });
   }
 
@@ -369,6 +377,76 @@ $(window).on('load', function() {
     var workLatLng = work.getLatLng();
     var radius     = homeLatLng.distanceTo(workLatLng);
     return radius;
+  }
+
+  function inCommute(feature) {
+    var latLng = L.latLng(feature.geometry.coordinates[0], feature.geometry.coordinates[1]);
+    return workCircle.contains(latLng);
+  }
+
+  function layerInCommute(layer) {
+    var latLng = L.latLng(layer.feature.geometry.coordinates[0], layer.feature.geometry.coordinates[1]);
+    return workCircle.contains(latLng);
+  }
+
+  function circleInCommute(circle) {
+    var latLng = circle.getLatLng();
+    return workCircle.contains(latLng);
+  }
+
+  function filterCommute() {
+    // schoolLayer.setFilter(inCommute(f));    <-- setFilter removes all markers, even if true
+    var icon = L.divIcon({
+                          html:       '',
+                          className:  'emptyIcon',
+                          iconSize:   [0 ,0]
+                         });
+    schoolLayer.eachLayer(function(layer) {
+      if (!layerInCommute(layer)) {
+        layer.setIcon(icon);
+        layer.feature.properties.hidden = true;
+      }
+    });
+
+    var radius = 0;
+    circleLayer.eachLayer(function(circle) {
+      if (!circleInCommute(circle)) {
+        circle.setRadius(radius);
+      }
+    });
+  }
+
+  function unfilterCommute() {
+    // schoolLayer.setFilter(function(f) {    <-- setFilter won't return markers
+    //   return true;
+    // });
+    schoolLayer.eachLayer(function(layer) {
+      var icon;
+      if (layer.feature.properties.dataLabel == '') {
+        icon = L.mapbox.marker.icon({
+                                     'marker-color':  '#1087bf',
+                                     'marker-symbol': layer.feature.properties.levelCode,
+                                    });
+      } else {
+        var dataLabelClass;
+        if (layer.feature.properties.circleArea < 0) {
+          dataLabelClass = 'dataLabel-negative';
+        } else {
+          dataLabelClass = 'dataLabel';
+        };
+        icon = L.divIcon({
+                          html:       layer.feature.properties.dataLabel,
+                          className:  dataLabelClass,
+                          iconSize:   [48, 48],
+                          iconAnchor: [24, 12],
+                          id:         layer.feature.properties.cdsCode
+                         });
+      };
+      layer.setIcon(icon);
+      layer.feature.properties.hidden = false;
+    });
+
+    updateDataCircles();
   }
 
   function initLayers(codes, results) {
@@ -433,7 +511,10 @@ $(window).on('load', function() {
     circleLayer.eachLayer(function(circle){
       var feature = features[circle.options.id];
       var data    = feature.properties.circleArea;
-      var radius  = Math.sqrt(Math.abs(data * scaler) * 1000/Math.PI);
+      var radius  = 0;
+      if (!feature.properties.hidden) {
+        radius  = Math.sqrt(Math.abs(data * scaler) * 1000/Math.PI);
+      };
       circle.setRadius(radius);
       circle.setStyle({
                        color:       '#ffffff',
@@ -460,13 +541,16 @@ $(window).on('load', function() {
     schoolLayer.eachLayer(function(label){
       var dataLabelClass;
       if (label.feature.properties.circleArea < 0) {
-        console.log('negative!')
         dataLabelClass = 'dataLabel-negative';
       } else {
         dataLabelClass = 'dataLabel';
       }
+      var displayLabel = '';
+      if (!label.feature.properties.hidden) {
+        displayLabel = label.feature.properties.dataLabel;
+      };
       var icon = L.divIcon({
-                            html:       label.feature.properties.dataLabel,
+                            html:       displayLabel,
                             className:  dataLabelClass,
                             iconSize:   [48, 48],
                             iconAnchor: [24, 12],
@@ -687,6 +771,20 @@ $(window).on('load', function() {
     toggleCommuteCircle();
   });
 
+  $('body').on('click', 'a#filter_commute', function(e) {
+    e.stopPropagation();
+    filterCommute();
+    $('li#unfilter_commute_li').show();
+    $('li#filter_commute_li').hide();
+  });
+
+  $('body').on('click', 'a#unfilter_commute', function(e) {
+    e.stopPropagation();
+    unfilterCommute();
+    $('li#filter_commute_li').show();
+    $('li#unfilter_commute_li').hide();
+  });
+
   $('body').on('click', 'button#api_button', function(e) {
     $('div#base_api_year_select').show();
     $('div#growth_api_year_select').show();
@@ -795,4 +893,3 @@ $(window).on('load', function() {
     updateCornerCircle(Math.floor(area), maxData, minData);
   });
 })
-
