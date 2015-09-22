@@ -5,7 +5,7 @@ from   collections import namedtuple
 
 
 class DataFileLoader(object):
-    """docstring for PublicSchoolLoader"""
+    """Base class for parsing CDE downloadable files and loading into DB"""
     def __init__(self, school_file_txt):
         super(DataFileLoader, self).__init__()
         self.file = os.path.abspath(school_file_txt)
@@ -50,7 +50,7 @@ class DataFileLoader(object):
 
 
 class PublicSchoolLoader(DataFileLoader):
-    """docstring for PublicSchoolLoader"""
+    """Parses/loads public school basic info TXT files"""
     def __init__(self, school_file_txt):
         super(PublicSchoolLoader, self).__init__(school_file_txt)
 

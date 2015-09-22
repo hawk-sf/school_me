@@ -21,7 +21,7 @@ log_stdout       = lg.StreamHandler(sys.stdout)
 file_formatter   = lg.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 stream_formatter = lg.Formatter('%(message)s')
 log_stdout.setFormatter(stream_formatter)
-# log_stdout.setLevel(lg.INFO)
+log_stdout.setLevel(lg.INFO)
 logger.addHandler(log_stdout)
 logger.setLevel(lg.DEBUG)
 
@@ -347,6 +347,9 @@ def main(*heads):
                 except Exception:
                     logger.exception("Error scraping %s", page.url)
     os.chdir(base_dir)
+
+
+# Script functionality unfinished
 
 
 def arg_set_up():

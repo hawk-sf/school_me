@@ -4,7 +4,7 @@ from dbfread       import DBF
 
 
 class GrowthAPILoader(DataFileLoader):
-    """docstring for GrowthAPILoader"""
+    """Parses/loads growth api DBF files"""
     def __init__(self, api_file_dbf, year):
         super(GrowthAPILoader, self).__init__(api_file_dbf)
         self.year = year
@@ -48,7 +48,7 @@ class GrowthAPILoader(DataFileLoader):
 
 
 class BaseAPILoader(GrowthAPILoader):
-    """docstring for GrowthAPILoader"""
+    """Parses/loads base api DBF files"""
     def __init__(self, api_file_dbf, year):
         super(BaseAPILoader, self).__init__(api_file_dbf, year)
 
