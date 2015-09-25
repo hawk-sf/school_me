@@ -1,7 +1,7 @@
 # school_me #
-A Flask app for accessing data on San Francisco public schools, with utility classes for scraping California Department of Education website for data files and their schemas.
+A Flask app for accessing data on San Francisco public schools, with utility classes for scraping the California Department of Education website for data files and their schemas.
 
-Hosted at: [PythonAnywhere](http://schoolme.pythonanywhere.com)
+Hosted at: [School Me - PythonAnywhere](http://schoolme.pythonanywhere.com)
 
 ## The Present ##
 Currently just proof of concept, so I can play around with mapbox/leaflet.
