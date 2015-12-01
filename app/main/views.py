@@ -1,27 +1,16 @@
 import os
-from collections import Counter
 from flask       import render_template, send_from_directory
-from .           import main
-from ..          import db
-from ..models    import School, BaseAPI, GrowthAPI
+from .           import main, tasks
 from .forms      import AddressForm, CommmuteForm
 from ..api.forms import BaseAPIForm, GrowthAPIForm
-from config      import SF_DISTRICT_CDS, MAPBOX_PK
-
-
-def get_education_levels(schools):
-    levels = [s.education_instruction_level for s in schools]
-    levels = Counter(levels)
-    return [key.as_dict() for key in levels.iterkeys()]
+from config      import MAPBOX_PK
 
 
 @main.route('/', methods=['GET'])
 def map():
-    sf_schools = School.query.filter_by(district_id = SF_DISTRICT_CDS,
-                                        status_type = u'Active').all()
-
+    sf_schools   = tasks.get_all_schools()
     address_form = AddressForm()
-    levels       = get_education_levels(sf_schools)
+    levels       = tasks.get_education_levels(sf_schools)
     address_form.number_of_results.choices    = [(25, 25), (50, 50), ('', 'All')]
     address_form.education_level_code.choices = sorted([(l['code'], l['name']) for l in levels],
                                                        key = lambda l: l[0])
@@ -29,11 +18,11 @@ def map():
     commute_form = CommmuteForm()
 
     base_api_form = BaseAPIForm()
-    years         = (db.session.query(BaseAPI.year).distinct().all())
+    years         = tasks.get_base_api_years()
     base_api_form.year.choices = sorted([(y[0], y[0]) for y in years], reverse = True)
 
     growth_api_form = GrowthAPIForm()
-    years           = db.session.query(GrowthAPI.year).distinct().all()
+    years           = tasks.get_growth_api_years()
     growth_api_form.year.choices = sorted([(y[0], y[0]) for y in years], reverse = True)
 
     return render_template('map.html',
