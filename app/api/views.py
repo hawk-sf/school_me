@@ -1,4 +1,4 @@
-from flask       import request, jsonify
+from flask       import request, jsonify, make_response
 from .           import api, tasks
 from .forms      import BaseAPIForm, GrowthAPIForm, SchoolsForm, CommmuteForm
 from collections import defaultdict
@@ -54,14 +54,20 @@ def map_schools():
 def school(cds_code):
     school = tasks.query_school(cds_code)
     result = school.as_dict(ensure_strings = True) if school else None
-    return jsonify(result)
+    if not result:
+        return make_response(jsonify({'error': 'Not found'}), 404)
+    else:
+        return jsonify(result)
 
 
 @api.route('/districts/<cds_code>', methods=['GET'])
 def district(cds_code):
     district = tasks.query_district(cds_code)
     result   = district.as_dict(ensure_strings = True) if district else None
-    return jsonify(result)
+    if not result:
+        return make_response(jsonify({'error': 'Not found'}), 404)
+    else:
+        return jsonify(result)
 
 
 @api.route('/commute', methods=['GET'])
@@ -71,10 +77,14 @@ def commute_address():
     street    = form.street.data   if form.street.data   else ''
     zip_code  = form.zip_code.data if form.zip_code.data else ''
     address   = ' '.join([street, zip_code])
-    work      = tasks.geocode_address(address)
-    results   = defaultdict(lambda: [])
-    results['work'] = work
-    return jsonify(results)
+    try:
+        work = tasks.geocode_address(address)
+    except Exception, e:
+        return make_response(jsonify({'error': e}), 500)
+    else:
+        results   = defaultdict(lambda: [])
+        results['work'] = work
+        return jsonify(results)
 
 
 @api.route('/base_apis', methods=['GET'])
@@ -89,18 +99,20 @@ def search_base_apis():
             if api:
                 base_apis.append(api)
     except Exception, e:
-        result = {'error': e}
+        return make_response(jsonify({'error': e}), 500)
     else:
         result = [api.as_dict() for api in base_apis]
-    finally:
         return jsonify({'results': result})
 
 
 @api.route('/base_apis/<_id>', methods=['GET'])
 def get_base_api(_id):
     base_api = tasks.query_base_api(_id)
-    result   = base_api.as_dict() if base_api else {}
-    return jsonify(result)
+    result   = base_api.as_dict() if base_api else None
+    if not result:
+        return make_response(jsonify({'error': 'Not found'}), 404)
+    else:
+        return jsonify(result)
 
 
 @api.route('/growth_apis', methods=['GET'])
@@ -125,17 +137,34 @@ def search_growth_apis():
 @api.route('/growth_apis/<_id>', methods=['GET'])
 def get_growth_api(_id):
     growth_api = tasks.query_growth_api(_id)
-    result     = growth_api.as_dict() if growth_api else {}
-    return jsonify(result)
+    result     = growth_api.as_dict() if growth_api else None
+    if not result:
+        return make_response(jsonify({'error': 'Not found'}), 404)
+    else:
+        return jsonify(result)
 
 
 @api.route('/stats/base_apis/<int:year>', methods=['GET'])
 def get_base_api_stats(year):
-    result = tasks.query_base_api_stats(year)
-    return jsonify(result)
+    try:
+        result = tasks.query_base_api_stats(year)
+    except Exception, e:
+        return make_response(jsonify({'error': e}), 500)
+    else:
+        if not result:
+            return make_response(jsonify({'error': 'Not found'}), 404)
+        else:
+            return jsonify(result)
 
 
 @api.route('/stats/growth_apis/<int:year>', methods=['GET'])
 def get_growth_api_stats(year):
-    result = tasks.query_growth_api_stats(year)
-    return jsonify(result)
+    try:
+        result = tasks.query_growth_api_stats(year)
+    except Exception, e:
+        return make_response(jsonify({'error': e}), 500)
+    else:
+        if not result:
+            return make_response(jsonify({'error': 'Not found'}), 404)
+        else:
+            return jsonify(result)

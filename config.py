@@ -22,6 +22,12 @@ class DevelopmentConfig(Config):
                               'mysql://root:%s@localhost/school_me_dev?charset=utf8' % DB_PASSWORD
 
 
+class TestingConfig(Config):
+    DEBUG                   = True
+    SQLALCHEMY_DATABASE_URI = os.environ.get('SCHOOL_ME_TEST_DB_URL') or \
+                              'mysql://root:%s@localhost/school_me_dev?charset=utf8' % DB_PASSWORD
+
+
 class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('SCHOOL_ME_PROD_DB_URL') or \
                               'mysql://root:%s@localhost/school_me?charset=utf8' % DB_PASSWORD
@@ -29,6 +35,7 @@ class ProductionConfig(Config):
 
 config = {
           'development': DevelopmentConfig,
+          'testing':     TestingConfig,
           'production':  ProductionConfig,
 
           'default':     DevelopmentConfig,
